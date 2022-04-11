@@ -14,20 +14,33 @@ import {
   Tag
 } from "paperback-extensions-common"
 
-const GOLDENMANGAS_DOMAIN = 'https://goldenmanga.top'
-
+const GOLDENMANGAS_DOMAIN = 'https://goldenmanga.top/'
+const method = 'GET'
 export const GoldenMangasInfo: SourceInfo = {
   version: '0.4.1',
   name: 'Golden Mangás',
   description: 'Extension that pulls manga from goldenmanga.top',
-  author: 'Conrad Weiser',
+  author: 'SuperTx2',
   authorWebsite: 'https://github.com/supertx2',
-  icon: "logo.jpg",
+  icon: "icon.jpg",
   hentaiSource: false,
   websiteBaseURL: GOLDENMANGAS_DOMAIN,
 }
 
 export class GoldenMangas extends Source {
+  readonly headers = {
+    "referer" :`https://google.com/`,
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.60 Safari/537.36",
+    "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5",
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+  };
+  getCloudflareBypassRequest() {
+    return createRequestObject({
+      url: GOLDENMANGAS_DOMAIN,
+      method: "GET",
+    })
+  }
+
   getMangaShareUrl(mangaId: string): string | null { return `${GOLDENMANGAS_DOMAIN}/mangabr/${mangaId}` }
 
   async getMangaDetails(mangaId: string): Promise<Manga> {
@@ -122,7 +135,6 @@ export class GoldenMangas extends Source {
     return chapters
   }
 
-
   async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
 
     let request = createRequestObject({
@@ -155,7 +167,8 @@ export class GoldenMangas extends Source {
 
     let request = createRequestObject({
       url: `${GOLDENMANGAS_DOMAIN}/mangabr?busca=${query.title}`,
-      method: "GET"
+      method: "GET",
+      headers: this.headers
     })
 
     const data = await this.requestManager.schedule(request, 1)
@@ -185,23 +198,23 @@ export class GoldenMangas extends Source {
 
   }
 
-
   async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
 
     // Let the app know what the homsections are without filling in the data
     let mostReadMangas = createHomeSection({ id: 'mostReadMangas', title: 'Mangás mais lidos' })
     sectionCallback(mostReadMangas)
 
+
     // Make the request and fill out available titles
     let request = createRequestObject({
-      url: `${GOLDENMANGAS_DOMAIN}`,
-      method: 'GET'
+      url: `https://goldenmanga.top/`,
+      method: 'GET',
+      headers: this.headers
     })
 
     const data = await this.requestManager.schedule(request, 1)
-
     let popularMangas: MangaTile[] = []
-    let $ = this.cheerio.load(data.data)
+    let $ = this.cheerio.load(data.data);
 
     let context = $("div#maisLidos div.itemmanga");
     for (let obj of context.toArray()) {
@@ -215,27 +228,13 @@ export class GoldenMangas extends Source {
         continue
       }
 
-      // Ensure that this title doesn't exist in the tile list already, as it causes weird glitches if so.
-      // This unfortunately makes this method O(n^2) but there never will be many elements
-      let foundItem = false
-      for (let item of popularMangas) {
-        if (item.id == id) {
-          foundItem = true
-          break
-        }
-      }
-
-      if (foundItem) {
-        continue
-      }
-
       popularMangas.push(createMangaTile({
         id: id,
         title: createIconText({ text: title }),
         image: img
       }))
     }
-
+  
     mostReadMangas.items = popularMangas
 
     sectionCallback(mostReadMangas)
