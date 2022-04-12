@@ -16,3 +16,4 @@ coverage
 # mac stuff
 .DS_Store
 /.vs/
+/temp_build/
