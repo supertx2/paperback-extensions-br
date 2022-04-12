@@ -9,7 +9,7 @@ reference
 .prettierrc
 .nyc_output
 coverage
-docs
+#docs
 
 .idea
 
