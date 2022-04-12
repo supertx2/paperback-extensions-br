@@ -1,8 +1,8 @@
 {
   "name": "extensions-official",
   "version": "1.0.0",
-  "repositoryName": "SuperTx2 H-Extensions (0.6)",
-  "description": "SuperTx2 H-Extensions for 0.6!",
+  "repositoryName": "SuperTx2 Extensions",
+  "description": "PT-BR sources for Paperback, some features might not work.",
   "main": "index.js",
   "GITHUB_REPOSITORY": "https://github.com/supertx2/extensions-promises",
   "baseURL": "https://supertx2.github.io/extensions-br",

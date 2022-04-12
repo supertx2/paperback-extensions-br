@@ -12,7 +12,7 @@ import {
 	TagSection,
 	PagedResults,
 	SourceInfo,
-	Tag
+	Tag, TagType
 } from "paperback-extensions-common"
 
 const GOLDENMANGAS_DOMAIN = 'https://goldenmanga.top/'
@@ -26,6 +26,20 @@ export const GoldenMangasInfo: SourceInfo = {
 	icon: "icon.jpg",
 	contentRating: ContentRating.ADULT,
 	websiteBaseURL: GOLDENMANGAS_DOMAIN,
+	sourceTags: [
+        {
+            text: 'New',
+            type: TagType.GREEN,
+        },
+	 	{
+            text: 'Beta',
+            type: TagType.RED
+        },
+        {
+            text: 'PT-BR',
+            type: TagType.GREY,
+        },
+    ],
 }
 
 export class GoldenMangas extends Source {

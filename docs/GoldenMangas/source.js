@@ -2421,6 +2421,20 @@ exports.GoldenMangasInfo = {
     icon: "icon.jpg",
     contentRating: paperback_extensions_common_1.ContentRating.ADULT,
     websiteBaseURL: GOLDENMANGAS_DOMAIN,
+    sourceTags: [
+        {
+            text: 'New',
+            type: paperback_extensions_common_1.TagType.GREEN,
+        },
+        {
+            text: 'Beta',
+            type: paperback_extensions_common_1.TagType.RED
+        },
+        {
+            text: 'PT-BR',
+            type: paperback_extensions_common_1.TagType.GREY,
+        },
+    ],
 };
 class GoldenMangas extends paperback_extensions_common_1.Source {
     constructor() {

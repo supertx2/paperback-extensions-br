@@ -11,7 +11,7 @@ import {
 	TagSection,
 	PagedResults,
 	SourceInfo,
-	Tag, ContentRating
+	Tag, ContentRating, TagType
 } from "paperback-extensions-common"
 
 const BASE_DOMAIN = 'https://mundomangakun.com.br'
@@ -25,6 +25,20 @@ export const MundoMangaKunInfo: SourceInfo = {
 	icon: "icon.png",
 	contentRating: ContentRating.ADULT,
 	websiteBaseURL: BASE_DOMAIN,
+	sourceTags: [
+        {
+            text: 'New',
+            type: TagType.GREEN,
+        },
+		{
+            text: 'Beta',
+            type: TagType.RED
+        },
+        {
+            text: 'PT-BR',
+            type: TagType.GREY,
+        },
+    ],
 }
 
 export class MundoMangaKun extends Source {
