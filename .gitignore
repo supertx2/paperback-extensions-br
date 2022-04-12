@@ -1,7 +1,7 @@
 #compiled files and the monstor that node usually is
 node_modules
 dist
-bundles
+#bundles
 
 #compiled sources
 reference
