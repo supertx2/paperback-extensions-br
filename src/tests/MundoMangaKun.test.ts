@@ -1,35 +1,33 @@
 import cheerio from 'cheerio'
 import { APIWrapper, Source } from 'paperback-extensions-common';
-import { Manganelo } from '../Manganelo/Manganelo';
+import { MundoMangaKun as MundoMangaKun } from '../MundoMangaKun/MundoMangaKun';
 
-describe('Manganelo Tests', function () {
+describe('GoldenMangas Tests', function () {
 
     var wrapper: APIWrapper = new APIWrapper();
-    var source: Source = new Manganelo(cheerio);
+    var source: Source = new MundoMangaKun(cheerio);
     var chai = require('chai'), expect = chai.expect, should = chai.should();
     var chaiAsPromised = require('chai-as-promised');
     chai.use(chaiAsPromised);
 
-    /**
-     * The Manga ID which this unit test uses to base it's details off of.
-     * Try to choose a manga which is updated frequently, so that the historical checking test can 
-     * return proper results, as it is limited to searching 30 days back due to extremely long processing times otherwise.
-     */
-    var mangaId = "zt922734"; // Legacy Mashle
+ /**
+  * The Manga ID which this unit test uses to base it's details off of.
+  * Try to choose a manga which is updated frequently, so that the historical checking test can 
+  * return proper results, as it is limited to searching 30 days back due to extremely long processing times otherwise.
+  */
+   var mangaId = "gleipnir";
 
     it("Retrieve Manga Details", async () => {
-        let details = await wrapper.getMangaDetails(source, mangaId);
-        expect(details, "No results found with test-defined ID [" + mangaId + "]").to.exist
-
-        // Validate that the fields are filled
-        let data = details;
-        expect(data.id, "Missing ID").to.be.not.empty;
-        expect(data.image, "Missing Image").to.be.not.empty;
-        expect(data.status, "Missing Status").to.exist;
-        expect(data.author, "Missing Author").to.be.not.empty;
-        expect(data.desc, "Missing Description").to.be.not.empty;
-        expect(data.titles, "Missing Titles").to.be.not.empty;
-        expect(data.rating, "Missing Rating").to.exist;
+       let details = await wrapper.getMangaDetails(source, mangaId);
+       expect(details, "No results found with test-defined ID [" + mangaId + "]").to.exist;
+       // Validate that the fields are filled
+       let data = details;
+       expect(data.id, "Missing ID").to.be.not.empty;
+       expect(data.image, "Missing Image").to.be.not.empty;
+       expect(data.status, "Missing Status").to.exist;
+       expect(data.desc, "Missing Description").to.be.not.empty;
+       expect(data.titles, "Missing Titles").to.be.not.empty;
+       expect(data.rating, "Missing Rating").to.exist;
     });
 
     it("Get Chapters", async () => {
@@ -39,19 +37,18 @@ describe('Manganelo Tests', function () {
 
         let entry = data[0]
         expect(entry.id, "No ID present").to.not.be.empty;
-        expect(entry.time, "No date present").to.exist
+        // expect(entry.time, "No date present").to.exist
         expect(entry.name, "No title available").to.not.be.empty
-        expect(entry.chapNum, "No chapter number present").to.exist
+        expect(entry.chapNum, "No chapter number present").to.not.be.null
     });
 
     it("Get Chapter Details", async () => {
-
         let chapters = await wrapper.getChapters(source, mangaId);
+        
         let data = await wrapper.getChapterDetails(source, mangaId, chapters[0].id);
 
         expect(data, "No server response").to.exist;
         expect(data, "Empty server response").to.not.be.empty;
-
         expect(data.id, "Missing ID").to.be.not.empty;
         expect(data.mangaId, "Missing MangaID").to.be.not.empty;
         expect(data.pages, "No pages present").to.be.not.empty;
@@ -59,11 +56,11 @@ describe('Manganelo Tests', function () {
 
     it("Testing search", async () => {
         let testSearch = createSearchRequest({
-            title: 'Boyfriend'
+            title: "gleipnir",
         });
 
-        let search = await wrapper.searchRequest(source, testSearch, {page: 1});
-        let result = search.results[0]
+        let search = await wrapper.searchRequest(source, testSearch);
+        let result = search.results[0];
 
         expect(result, "No response from server").to.exist;
 
@@ -76,9 +73,14 @@ describe('Manganelo Tests', function () {
     it("Testing Home-Page aquisition", async() => {
         let homePages = await wrapper.getHomePageSections(source)
         expect(homePages, "No response from server").to.exist
-        expect(homePages[0], "No top weekly section available").to.exist
-        expect(homePages[1], "No latest updates section available").to.exist
-        expect(homePages[2], "No new manga section available").to.exist
+        expect(homePages[0].items, "No items present").to.exist
+
+        // Ensure that we can resolve each of the images for the home-page, since these images are generated and not scraped
+        for(let obj of homePages[0].items ?? []) {
+            let axios = require('axios')
+            let imageResult = await axios.get(obj.image)
+            expect(imageResult.status).to.equal(200)    // Good resolve!
+        }
     })
 
 })

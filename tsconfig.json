@@ -25,7 +25,8 @@
     /* Strict Type-Checking Options */
     "strict": true,
     "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true /* Disallow inconsistently-cased references to the same file. */
+    "forceConsistentCasingInFileNames": true, /* Disallow inconsistently-cased references to the same file. */
+    "noImplicitAny": false
   },
   "include": [
     "src"
