@@ -1,11 +1,11 @@
 {
   "name": "extensions-official",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "repositoryName": "SuperTx2 Extensions",
   "description": "PT-BR sources for Paperback, some features might not work.",
   "main": "index.js",
-  "GITHUB_REPOSITORY": "https://github.com/supertx2/extensions-promises",
-  "baseURL": "https://supertx2.github.io/extensions-br",
+  "GITHUB_REPOSITORY": "https://github.com/supertx2/paperback-extensions-br",
+  "baseURL": "https://supertx2.github.io/paperback-extensions-br",
   "scripts": {
     "start": "tsc && node dist/api.js",
     "build": "tsc",
