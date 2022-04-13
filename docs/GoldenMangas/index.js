@@ -2980,10 +2980,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GoldenMangas = exports.GoldenMangasInfo = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
-const GOLDENMANGAS_DOMAIN = 'https://goldenmanga.top/';
-const method = 'GET';
+const GOLDENMANGAS_DOMAIN = 'https://goldenmanga.top';
 exports.GoldenMangasInfo = {
-    version: '0.2',
+    version: '0.3',
     name: 'Golden Mangás',
     description: 'Extension that pulls manga from goldenmanga.top',
     author: 'SuperTx2',
@@ -3023,7 +3022,6 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
                 interceptRequest: (request) => __awaiter(this, void 0, void 0, function* () { return request; }),
                 interceptResponse: function name(response) {
                     return __awaiter(this, void 0, void 0, function* () {
-                        console.log("interceptResponse");
                         response["fixedData"] = response.data || Buffer.from(createByteArray(response.rawData)).toString();
                         return response;
                     });
@@ -3119,12 +3117,17 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
             const author = secondColumn.find("h5:contains(Autor)").text();
             const artist = secondColumn.find("h5:contains(Artista)").text();
             const rating = Number(secondColumn.find("h2").eq(1).text().replace('#', '').split(' ')[0]);
-            const genres = [];
-            secondColumn.find("h5:contains(Genero) a").filter((i, e) => !!$(e).text()).toArray().map(e => genres.push({
-                id: $(e).text().trim(),
-                label: $(e).text().trim()
-            }));
-            let tags = [createTagSection({ id: '0', label: 'genres', tags: genres })];
+            let genres = [];
+            secondColumn.find("h5").first().find("a").filter((i, e) => !!$(e).text()).toArray().map(e => {
+                const idString = $(e).attr("href").replace('..', '').replace('/mangabr?genero=', '');
+                if (!idString)
+                    return;
+                genres.push({
+                    id: idString,
+                    label: $(e).text().trim()
+                });
+            });
+            let tags = [createTagSection({ id: '0', label: 'genres', tags: genres.map(g => createTag(g)) })];
             let summary = $("#manga_capitulo_descricao").text().trim();
             return createManga({
                 id: mangaId,
@@ -3134,7 +3137,7 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
                 author: author,
                 artist: artist,
                 status: Number(status),
-                // tags: tags, //It's making the app to crash
+                tags: tags,
                 desc: summary
             });
         });
@@ -3200,13 +3203,20 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
         });
     }
     getSearchResults(query, metadata) {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c, _d, _e, _f;
         return __awaiter(this, void 0, void 0, function* () {
-            const page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
-            let search = !!query.title ? `busca=${query.title}` : '';
+            console.log("[Debug] Searching for: ");
+            console.log("Title: " + query.title);
+            console.log("Parameters: " + (Object === null || Object === void 0 ? void 0 : Object.entries(query.parameters).map(e => e[0]).join(', ')));
+            console.log("IncludedTags: " + ((_a = query.includedTags) === null || _a === void 0 ? void 0 : _a.map(e => e.id).join(', ')));
+            console.log("Page: " + (metadata === null || metadata === void 0 ? void 0 : metadata.page));
+            const page = (_b = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _b !== void 0 ? _b : 1;
+            if (page == -1)
+                return createPagedResults({ results: [], metadata: { page: -1 } });
+            let search = !!query.title ? `busca=${encodeURI(query.title.replace(' ', '+'))}` : '';
             //We can only search by title or by tags
             if (!search) {
-                search = (((_c = (_b = query.includedTags) === null || _b === void 0 ? void 0 : _b.length) !== null && _c !== void 0 ? _c : 0) > 0) ? `genero=${(_d = query.includedTags) === null || _d === void 0 ? void 0 : _d.map(t => t.id).join(',')}` : '';
+                search = (((_d = (_c = query.includedTags) === null || _c === void 0 ? void 0 : _c.length) !== null && _d !== void 0 ? _d : 0) > 0) ? `genero=${encodeURI(((_e = query.includedTags) === null || _e === void 0 ? void 0 : _e.map(t => t.id).join(',')) || '')}` : '';
             }
             const request = createRequestObject({
                 url: `${GOLDENMANGAS_DOMAIN}/mangabr?${search}&pagina=${page}`,
@@ -3220,8 +3230,8 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
             for (let manga of $("div.mangas.col-lg-2 a").toArray()) {
                 const $manga = $(manga);
                 const title = $manga.find("h3").text();
-                const id = (_e = $manga.attr("href")) === null || _e === void 0 ? void 0 : _e.replace("/mangabr/", "");
-                const image = $manga.find("img").attr("href");
+                const id = (_f = $manga.attr("href")) === null || _f === void 0 ? void 0 : _f.replace("/mangabr/", "");
+                const image = $manga.find("img").attr("src");
                 mangaTiles.push(createMangaTile({
                     id: id,
                     title: createIconText({ text: title }),
@@ -3230,11 +3240,12 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
             }
             const pages = $(".pagination li");
             const totalPages = Number(pages.eq(pages.length - 2).text().trim() || 1);
+            console.log("[Debug] Total Pages: " + totalPages);
             // Because we're reading JSON, there will never be another page to search through
             return createPagedResults({
                 results: mangaTiles,
                 metadata: {
-                    page: page,
+                    page: page + 1 > totalPages ? -1 : page + 1,
                     totalPages: totalPages
                 }
             });

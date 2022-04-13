@@ -58,7 +58,7 @@ describe('GoldenMangas Tests', function () {
 
 	it("Testing search", async () => {
 		let testSearch: SearchRequest = {
-			title: "Kaguya",
+			title: "Gleip",
 			parameters: {}
 		};
 
