@@ -2412,7 +2412,7 @@ exports.GoldenMangas = exports.GoldenMangasInfo = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 const GOLDENMANGAS_DOMAIN = 'https://goldenmanga.top';
 exports.GoldenMangasInfo = {
-    version: '0.3',
+    version: '0.6',
     name: 'Golden Mangás',
     description: 'Extension that pulls manga from goldenmanga.top',
     author: 'SuperTx2',
@@ -2422,17 +2422,21 @@ exports.GoldenMangasInfo = {
     websiteBaseURL: GOLDENMANGAS_DOMAIN,
     sourceTags: [
         {
-            text: 'New',
-            type: paperback_extensions_common_1.TagType.GREEN,
+            text: "Notifications",
+            type: paperback_extensions_common_1.TagType.GREEN
+        },
+        {
+            text: 'PT-BR',
+            type: paperback_extensions_common_1.TagType.GREY,
         },
         {
             text: 'Beta',
             type: paperback_extensions_common_1.TagType.RED
         },
         {
-            text: 'PT-BR',
-            type: paperback_extensions_common_1.TagType.GREY,
-        },
+            text: "Cloudflare",
+            type: paperback_extensions_common_1.TagType.RED
+        }
     ],
 };
 class GoldenMangas extends paperback_extensions_common_1.Source {
@@ -2683,12 +2687,16 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
     }
     filterUpdatedManga(mangaUpdatesFoundCallback, time, ids) {
         return __awaiter(this, void 0, void 0, function* () {
+            const dateToSearch = new Date(time.getFullYear(), time.getMonth(), time.getDate());
+            console.log(`[Debug] filterUpdatedManga: time: ${time}, dateToSearch: ${dateToSearch} ids: ${ids.join(', ')}`);
             let loadNextPage = true;
             let foundIds = [];
             let page = 1;
             while (loadNextPage && page <= 20) {
-                const response = yield this.filterUpdatedMangaGetIds(page, time, ids);
+                console.log(`[Debug] filterUpdatedManga: Loading page: ${page}`);
+                const response = yield this.filterUpdatedMangaGetIds(page, dateToSearch, ids);
                 loadNextPage = response.loadNextPage;
+                console.log(`[Debug] filterUpdatedManga: Done loadNextPage: ${loadNextPage}`);
                 if (response.foundIds && response.foundIds.length > 0)
                     foundIds.concat(response.foundIds);
                 page = page + 1;
@@ -2708,8 +2716,8 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
                 method: 'GET',
                 headers: this.headers
             });
-            const data = yield this.requestManager.schedule(request, 1);
-            const $ = this.cheerio.load(data.data);
+            const response = yield this.requestManager.schedule(request, 1);
+            const $ = this.cheerio.load(response.data || response['fixedData']);
             let foundIds = [];
             let loadNextPage = true;
             let context = $("#response .atualizacao");

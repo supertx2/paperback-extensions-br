@@ -18,7 +18,7 @@ import {
 const GOLDENMANGAS_DOMAIN = 'https://goldenmanga.top'
 
 export const GoldenMangasInfo: SourceInfo = {
-	version: '0.3',
+	version: '0.6',
 	name: 'Golden Mangás',
 	description: 'Extension that pulls manga from goldenmanga.top',
 	author: 'SuperTx2',
@@ -27,18 +27,22 @@ export const GoldenMangasInfo: SourceInfo = {
 	contentRating: ContentRating.ADULT,
 	websiteBaseURL: GOLDENMANGAS_DOMAIN,
 	sourceTags: [
-        {
-            text: 'New',
-            type: TagType.GREEN,
-        },
-	 	{
-            text: 'Beta',
-            type: TagType.RED
+		{
+            text: "Notifications",
+            type: TagType.GREEN
         },
         {
             text: 'PT-BR',
             type: TagType.GREY,
         },
+		{
+            text: 'Beta',
+            type: TagType.RED
+        },
+		{
+            text: "Cloudflare",
+            type: TagType.RED
+        }
     ],
 }
 
@@ -219,7 +223,7 @@ export class GoldenMangas extends Source {
 			headers: this.headers
 		})
 
-		const response = await this.requestManager.schedule(request, 1)
+		const response = await this.requestManager.schedule(request, 1);
 		const $ = this.cheerio.load(response.data || response['fixedData'])
 
 		let mangaTiles: MangaTile[] = []
@@ -254,12 +258,17 @@ export class GoldenMangas extends Source {
 	}
 	
 	override async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
+		const dateToSearch = new Date(time.getFullYear(), time.getMonth(), time.getDate());
+		console.log(`[Debug] filterUpdatedManga: time: ${time}, dateToSearch: ${dateToSearch} ids: ${ids.join(', ')}`);
 		let loadNextPage = true;
 		let foundIds: string[] = [];
 		let page = 1;
 		while (loadNextPage && page <= 20) {
-			const response = await this.filterUpdatedMangaGetIds(page, time, ids);
+			console.log(`[Debug] filterUpdatedManga: Loading page: ${page}`);
+			const response = await this.filterUpdatedMangaGetIds(page, dateToSearch, ids);
 			loadNextPage = response.loadNextPage;
+			console.log(`[Debug] filterUpdatedManga: Done loadNextPage: ${loadNextPage}`);
+
 			if(response.foundIds && response.foundIds.length > 0)
 				foundIds.concat(response.foundIds);
 			page = page+1;
@@ -280,8 +289,8 @@ export class GoldenMangas extends Source {
 			headers: this.headers
         })
 
-        const data = await this.requestManager.schedule(request, 1)
-        const $ = this.cheerio.load(data.data)
+        const response = await this.requestManager.schedule(request, 1)
+        const $ = this.cheerio.load(response.data || response['fixedData'])
 		let foundIds: string[] = [];
 		let loadNextPage = true;
         let context = $("#response .atualizacao");
