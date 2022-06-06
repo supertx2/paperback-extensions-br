@@ -3159,7 +3159,7 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
                 const rawName = firstColumn.text();
                 const name = rawName.substring(0, rawName.indexOf('(')).trim();
                 const splitedDate = firstColumn.find("span[style]").text().replace('(', '').replace(')', '').trim().split('/').map(i => Number(i));
-                let time = new Date(splitedDate[2], splitedDate[1], splitedDate[0]);
+                let time = new Date(splitedDate[2], splitedDate[1] - 1, splitedDate[0]);
                 let id = (_a = $('a', $(obj)).attr('href')) === null || _a === void 0 ? void 0 : _a.replace(`/mangabr/${mangaId}/`, '');
                 let chapNum = Number(id);
                 // If we parsed a bad ID out, don't include this in our list
@@ -3249,6 +3249,58 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
                     totalPages: totalPages
                 }
             });
+        });
+    }
+    filterUpdatedManga(mangaUpdatesFoundCallback, time, ids) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let loadNextPage = true;
+            let foundIds = [];
+            let page = 1;
+            while (loadNextPage && page <= 20) {
+                const response = yield this.filterUpdatedMangaGetIds(page, time, ids);
+                loadNextPage = response.loadNextPage;
+                if (response.foundIds && response.foundIds.length > 0)
+                    foundIds.concat(response.foundIds);
+                page = page + 1;
+            }
+            if (foundIds.length > 0) {
+                mangaUpdatesFoundCallback(createMangaUpdates({
+                    ids: foundIds
+                }));
+            }
+        });
+    }
+    filterUpdatedMangaGetIds(page, time, ids) {
+        var _a, _b, _c;
+        return __awaiter(this, void 0, void 0, function* () {
+            let request = createRequestObject({
+                url: `${GOLDENMANGAS_DOMAIN}/index.php?pagina=${page}`,
+                method: 'GET',
+                headers: this.headers
+            });
+            const data = yield this.requestManager.schedule(request, 1);
+            const $ = this.cheerio.load(data.data);
+            let foundIds = [];
+            let loadNextPage = true;
+            let context = $("#response .atualizacao");
+            for (let obj of context.toArray()) {
+                const $obj = $(obj);
+                let id = (_a = $obj.find('a').first().attr('href')) === null || _a === void 0 ? void 0 : _a.replace('/mangabr/', '');
+                const updateTimeSplied = (_c = (_b = $obj.find(".dataAtualizacao").text()) === null || _b === void 0 ? void 0 : _b.trim()) === null || _c === void 0 ? void 0 : _c.split('/').map(i => Number(i));
+                let updateTime;
+                if (!updateTimeSplied || updateTimeSplied.length !== 3)
+                    continue;
+                updateTime = new Date(updateTimeSplied[2], updateTimeSplied[1] - 1, updateTimeSplied[0]);
+                if (updateTime >= time) {
+                    if (ids.includes(id))
+                        foundIds.push(id);
+                }
+                else {
+                    loadNextPage = false;
+                    break;
+                }
+            }
+            return { foundIds: foundIds, loadNextPage: loadNextPage };
         });
     }
     getHomePageSections(sectionCallback) {

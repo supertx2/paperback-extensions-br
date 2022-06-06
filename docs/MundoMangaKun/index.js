@@ -2992,17 +2992,21 @@ exports.MundoMangaKunInfo = {
     websiteBaseURL: BASE_DOMAIN,
     sourceTags: [
         {
-            text: 'New',
-            type: paperback_extensions_common_1.TagType.GREEN,
+            text: "Notifications",
+            type: paperback_extensions_common_1.TagType.GREEN
+        },
+        {
+            text: 'PT-BR',
+            type: paperback_extensions_common_1.TagType.GREY,
         },
         {
             text: 'Beta',
             type: paperback_extensions_common_1.TagType.RED
         },
         {
-            text: 'PT-BR',
-            type: paperback_extensions_common_1.TagType.GREY,
-        },
+            text: "Cloudflare",
+            type: paperback_extensions_common_1.TagType.RED
+        }
     ],
 };
 class MundoMangaKun extends paperback_extensions_common_1.Source {

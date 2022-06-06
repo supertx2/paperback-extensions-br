@@ -26,18 +26,22 @@ export const MundoMangaKunInfo: SourceInfo = {
 	contentRating: ContentRating.ADULT,
 	websiteBaseURL: BASE_DOMAIN,
 	sourceTags: [
-        {
-            text: 'New',
-            type: TagType.GREEN,
-        },
 		{
-            text: 'Beta',
-            type: TagType.RED
+            text: "Notifications",
+            type: TagType.GREEN
         },
         {
             text: 'PT-BR',
             type: TagType.GREY,
         },
+		{
+            text: 'Beta',
+            type: TagType.RED
+        },
+		{
+            text: "Cloudflare",
+            type: TagType.RED
+        }
     ],
 }
 

@@ -12,7 +12,7 @@ import {
 	TagSection,
 	PagedResults,
 	SourceInfo,
-	Tag, TagType
+	Tag, TagType, MangaUpdates
 } from "paperback-extensions-common"
 
 const GOLDENMANGAS_DOMAIN = 'https://goldenmanga.top'
@@ -144,7 +144,7 @@ export class GoldenMangas extends Source {
 			const name = rawName.substring(0,rawName.indexOf('(')).trim();
 			const splitedDate = firstColumn.find("span[style]").text().replace('(','').replace(')','').trim().split('/').map(i=> Number(i));
 
-			let time = new Date(splitedDate[2],splitedDate[1], splitedDate[0]);
+			let time = new Date(splitedDate[2], splitedDate[1] - 1, splitedDate[0]);
 
 			let id = $('a', $(obj)).attr('href')?.replace(`/mangabr/${mangaId}/`, '')
 			let chapNum = Number(id)
@@ -251,6 +251,61 @@ export class GoldenMangas extends Source {
 			}
 		})
 
+	}
+	
+	override async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
+		let loadNextPage = true;
+		let foundIds: string[] = [];
+		let page = 1;
+		while (loadNextPage && page <= 20) {
+			const response = await this.filterUpdatedMangaGetIds(page, time, ids);
+			loadNextPage = response.loadNextPage;
+			if(response.foundIds && response.foundIds.length > 0)
+				foundIds.concat(response.foundIds);
+			page = page+1;
+		}
+
+		if(foundIds.length > 0) {
+			mangaUpdatesFoundCallback(createMangaUpdates({
+				ids: foundIds
+			}))
+		}
+	}
+
+	private async filterUpdatedMangaGetIds(page: number, time: Date, ids: string[]) {
+
+		let request = createRequestObject({
+            url: `${GOLDENMANGAS_DOMAIN}/index.php?pagina=${page}`,
+            method: 'GET',
+			headers: this.headers
+        })
+
+        const data = await this.requestManager.schedule(request, 1)
+        const $ = this.cheerio.load(data.data)
+		let foundIds: string[] = [];
+		let loadNextPage = true;
+        let context = $("#response .atualizacao");
+		for (let obj of context.toArray()) {
+			const $obj = $(obj);
+			let id = $obj.find('a').first().attr('href')?.replace('/mangabr/','');
+
+			const updateTimeSplied = $obj.find(".dataAtualizacao").text()?.trim()?.split('/').map(i=> Number(i));
+			let updateTime:Date;
+			if(!updateTimeSplied || updateTimeSplied.length !== 3) 
+				continue;
+
+			updateTime = new Date(updateTimeSplied[2], updateTimeSplied[1] - 1, updateTimeSplied[0]);
+
+			if(updateTime >= time) {
+				if(ids.includes(id))
+					foundIds.push(id);
+			} else {
+				loadNextPage = false;
+				break;
+			}
+		}
+
+		return {foundIds: foundIds, loadNextPage: loadNextPage}
 	}
 
 	override async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
