@@ -18,7 +18,7 @@ const BASE_DOMAIN = 'https://mundomangakun.com.br'
 const method = 'GET'
 
 export class Parser {
-	
+
 	parseMangaDetails($: any, mangaId: string): Manga {
 
 		const $infoElement = $(".main_container_projeto .container-fluid");
@@ -82,7 +82,7 @@ export class Parser {
 
 		return chapters
 	}
-	
+
 	parseChapterDetails(data: any, mangaId: string, chapterId: string): ChapterDetails {
 
 		let pagesString = data.data
@@ -91,7 +91,7 @@ export class Parser {
 		pagesString = pagesString.substring(0, pagesString.indexOf(']') + 1).replace('var paginas = ', '');
 		const pagesObject = JSON.parse(pagesString);
 
-		pagesObject.map( p => encodeURIComponent(p));
+		pagesObject.map(p => encodeURIComponent(p));
 		return createChapterDetails({
 			id: chapterId,
 			mangaId: mangaId,
