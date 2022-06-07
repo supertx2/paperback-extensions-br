@@ -31,19 +31,19 @@ describe('GoldenMangas Tests', function () {
 		expect(data.rating, "Missing Rating").to.exist;
 	});
 
-    it("Get Chapters", async () => {
-        let data = await wrapper.getChapters(source, mangaId);
-        expect(data, "No chapters present for: [" + mangaId + "]").to.not.be.empty;
-        let entry = data[0]
-        expect(entry.id, "No ID present").to.not.be.empty;
-        expect(entry.time, "No date present").to.exist
-        expect(entry.name, "No title available").to.not.be.empty
-        expect(entry.chapNum, "No chapter number present").to.not.be.null
-    });
+	it("Get Chapters", async () => {
+		let data = await wrapper.getChapters(source, mangaId);
+		expect(data, "No chapters present for: [" + mangaId + "]").to.not.be.empty;
+		let entry = data[0]
+		expect(entry.id, "No ID present").to.not.be.empty;
+		expect(entry.time, "No date present").to.exist
+		expect(entry.name, "No title available").to.not.be.empty
+		expect(entry.chapNum, "No chapter number present").to.not.be.null
+	});
 
-   it("Testing Notifications", async () => {
+	it("Testing Notifications", async () => {
 		var date = new Date();
-		date.setDate(date.getDate()-1);
+		date.setDate(date.getDate() - 1);
 
 		const updates = await wrapper.filterUpdatedManga(source, date, [mangaId, "god-of-blackfield"]);
 
@@ -52,15 +52,15 @@ describe('GoldenMangas Tests', function () {
 		expect(updates[0].ids, "No updates").to.not.be.empty;
 	});
 
-     it("Get Chapter Details", async () => {
-       let chapters = await wrapper.getChapters(source, mangaId);
-       let data = await wrapper.getChapterDetails(source, mangaId, chapters[0].id);
-       expect(data, "No server response").to.exist;
-       expect(data, "Empty server response").to.not.be.empty;
-       expect(data.id, "Missing ID").to.be.not.empty;
-       expect(data.mangaId, "Missing MangaID").to.be.not.empty;
-       expect(data.pages, "No pages present").to.be.not.empty;
-   });
+	it("Get Chapter Details", async () => {
+		let chapters = await wrapper.getChapters(source, mangaId);
+		let data = await wrapper.getChapterDetails(source, mangaId, chapters[0].id);
+		expect(data, "No server response").to.exist;
+		expect(data, "Empty server response").to.not.be.empty;
+		expect(data.id, "Missing ID").to.be.not.empty;
+		expect(data.mangaId, "Missing MangaID").to.be.not.empty;
+		expect(data.pages, "No pages present").to.be.not.empty;
+	});
 
 	it("Testing search", async () => {
 		let testSearch: SearchRequest = {
@@ -99,14 +99,14 @@ describe('GoldenMangas Tests', function () {
 		expect(result.subtitleText, "No subtitle text").to.be.not.null;
 	});
 
-	it("Testing Home-Page aquisition", async() => {
+	it("Testing Home-Page aquisition", async () => {
 		let homePages = await wrapper.getHomePageSections(source);
 		let axios = require('axios');
 		expect(homePages, "No response from server").to.exist;
 		expect(homePages[0].items, "No items present").to.exist;
-		const uniqueSections =  [...new Map(homePages.map(item => [item.id, item])).values()];
-		let promisesList:Promise<any>[] = [];
-		for(let section of uniqueSections ?? []) {
+		const uniqueSections = [...new Map(homePages.map(item => [item.id, item])).values()];
+		let promisesList: Promise<any>[] = [];
+		for (let section of uniqueSections ?? []) {
 			// Ensure that we can resolve each of the images for the home-page, since these images are generated and not scraped
 			for (let obj of section.items ?? []) {
 				expect(obj.id, "No ID found").to.be.not.empty;
@@ -114,11 +114,11 @@ describe('GoldenMangas Tests', function () {
 				promisesList.push(axios.get(obj.image));
 			}
 		}
-		for(let promise of promisesList) {
+		for (let promise of promisesList) {
 			let imageResult = await promise;
 			expect(imageResult.status).to.equal(200); // Good resolve!
 		}
 
 	})
 
-})
+});

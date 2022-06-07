@@ -2993,15 +2993,7 @@ exports.MundoMangaKunInfo = {
     websiteBaseURL: BASE_DOMAIN,
     sourceTags: [
         {
-            text: 'New',
-            type: paperback_extensions_common_1.TagType.GREEN,
-        },
-        {
-            text: 'Beta',
-            type: paperback_extensions_common_1.TagType.RED
-        },
-        {
-            text: 'PT-BR',
+            text: 'Portuguese',
             type: paperback_extensions_common_1.TagType.GREY,
         },
     ],
@@ -3012,10 +3004,16 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
         this.parser = new MundoMangaKunParser_1.Parser();
         this.requestManager = createRequestManager({
             requestsPerSecond: 3,
-            requestTimeout: 100000
+            requestTimeout: 100000,
+            interceptor: {
+                interceptRequest: (request) => __awaiter(this, void 0, void 0, function* () {
+                    request.headers = this.constructHeaders();
+                    return request;
+                }),
+                interceptResponse: (response) => __awaiter(this, void 0, void 0, function* () { return response; })
+            }
         });
         this.cookies = [createCookie({ name: 'set', value: 'h=1', domain: BASE_DOMAIN })];
-        this.userAgentRandomizer = `Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:77.0) Gecko/20100101 Firefox/78.0${Math.floor(Math.random() * 100000)}`;
     }
     cloudflareBypassRequest() {
         return createRequestObject({
@@ -3040,7 +3038,6 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
             let request = createRequestObject({
                 url: `${BASE_DOMAIN}/projeto/${mangaId}/`,
                 method: "GET",
-                headers: this.constructHeaders()
             });
             const data = yield this.requestManager.schedule(request, 1);
             let $ = this.cheerio.load(data.data);
@@ -3054,11 +3051,15 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
                 method: 'GET',
                 cookies: [
                     createCookie({ name: 'apagarLuzes', value: '0', domain: 'mundomangakun.com.br', path: '/' }),
-                    createCookie({ name: 'modoNavegacaoLeitor', value: '#todas-as-paginas', domain: 'mundomangakun.com.br', path: '/' }),
-                    createCookie({ name: '_ga', value: 'GA1.3.1857711392.1649606782', domain: 'mundomangakun.com.br', path: '/' }),
-                    createCookie({ name: '_gid', value: 'GA1.3.1857711392.1649606782', domain: 'mundomangakun.com.br', path: '/' })
+                    createCookie({
+                        name: 'modoNavegacaoLeitor',
+                        value: '#todas-as-paginas',
+                        domain: 'mundomangakun.com.br',
+                        path: '/'
+                    }),
+                    // createCookie({ name: '_ga', value: 'GA1.3.1857711392.1649606782', domain: 'mundomangakun.com.br', path:'/' }),
+                    // createCookie({ name: '_gid', value: 'GA1.3.1857711392.1649606782', domain: 'mundomangakun.com.br', path:'/' })
                 ],
-                headers: this.constructHeaders()
             });
             const data = yield this.requestManager.schedule(request, 1);
             return this.parser.parseChapterDetails(data, mangaId, chapterId);
@@ -3069,7 +3070,6 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
             let request = createRequestObject({
                 url: `${BASE_DOMAIN}/leitor-online/?leitor_titulo_projeto=${query.title}&leitor_autor_projeto=&leitor_genero_projeto=&leitor_status_projeto=&leitor_ordem_projeto=ASC`,
                 method: "GET",
-                headers: this.constructHeaders()
             });
             const data = yield this.requestManager.schedule(request, 1);
             const $ = this.cheerio.load(data.data);
@@ -3084,7 +3084,6 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
             let request = createRequestObject({
                 url: BASE_DOMAIN,
                 method: 'GET',
-                headers: this.constructHeaders()
             });
             const data = yield this.requestManager.schedule(request, 2);
             let $ = this.cheerio.load(data.data);
@@ -3101,9 +3100,7 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
     }
     constructHeaders(headers, refererPath) {
         headers = headers !== null && headers !== void 0 ? headers : {};
-        if (this.userAgentRandomizer !== '') {
-            headers['User-Agent'] = this.userAgentRandomizer;
-        }
+        headers['User-Agent'] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.60 Safari/537.36";
         headers['referer'] = BASE_DOMAIN;
         headers['Host'] = `mundomangakun.com.br`;
         headers['Origin'] = BASE_DOMAIN;
@@ -3158,7 +3155,7 @@ class Parser {
             const name = $obj.text();
             const clickEvent = $obj.attr("onclick");
             const id = clickEvent === null || clickEvent === void 0 ? void 0 : clickEvent.substring(clickEvent.indexOf(mangaId), clickEvent.indexOf(`','tipo'`)).replaceAll('\\', '').replace(`${mangaId}/`, '').split('/')[0];
-            let chapNum = Number(name.replace(/\D/g, ''));
+            let chapNum = Number(name.replace(/\D/g, '')) || 0;
             // If we parsed a bad ID out, don't include this in our list
             if (!id) {
                 continue;
@@ -3179,6 +3176,7 @@ class Parser {
         pagesString = pagesString.substring(pagesStartIndex, pagesString.length - 1);
         pagesString = pagesString.substring(0, pagesString.indexOf(']') + 1).replace('var paginas = ', '');
         const pagesObject = JSON.parse(pagesString);
+        pagesObject.map(p => encodeURIComponent(p));
         return createChapterDetails({
             id: chapterId,
             mangaId: mangaId,

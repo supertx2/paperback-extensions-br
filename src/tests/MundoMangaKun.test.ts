@@ -10,24 +10,24 @@ describe('GoldenMangas Tests', function () {
     var chaiAsPromised = require('chai-as-promised');
     chai.use(chaiAsPromised);
 
- /**
-  * The Manga ID which this unit test uses to base it's details off of.
-  * Try to choose a manga which is updated frequently, so that the historical checking test can 
-  * return proper results, as it is limited to searching 30 days back due to extremely long processing times otherwise.
-  */
-   var mangaId = "gleipnir";
+    /**
+     * The Manga ID which this unit test uses to base it's details off of.
+     * Try to choose a manga which is updated frequently, so that the historical checking test can
+     * return proper results, as it is limited to searching 30 days back due to extremely long processing times otherwise.
+     */
+    var mangaId = "gleipnir";
 
     it("Retrieve Manga Details", async () => {
-       let details = await wrapper.getMangaDetails(source, mangaId);
-       expect(details, "No results found with test-defined ID [" + mangaId + "]").to.exist;
-       // Validate that the fields are filled
-       let data = details;
-       // expect(data.id, "Missing ID").to.be.not.empty;
-       expect(data.image, "Missing Image").to.be.not.empty;
-       expect(data.status, "Missing Status").to.exist;
-       expect(data.desc, "Missing Description").to.be.not.empty;
-       expect(data.titles, "Missing Titles").to.be.not.empty;
-       expect(data.rating, "Missing Rating").to.exist;
+        let details = await wrapper.getMangaDetails(source, mangaId);
+        expect(details, "No results found with test-defined ID [" + mangaId + "]").to.exist;
+        // Validate that the fields are filled
+        let data = details;
+        // expect(data.id, "Missing ID").to.be.not.empty;
+        expect(data.image, "Missing Image").to.be.not.empty;
+        expect(data.status, "Missing Status").to.exist;
+        expect(data.desc, "Missing Description").to.be.not.empty;
+        expect(data.titles, "Missing Titles").to.be.not.empty;
+        expect(data.rating, "Missing Rating").to.exist;
     });
 
     it("Get Chapters", async () => {
@@ -44,8 +44,8 @@ describe('GoldenMangas Tests', function () {
 
     it("Get Chapter Details", async () => {
         let chapters = await wrapper.getChapters(source, mangaId);
-        
-        let data = await wrapper.getChapterDetails(source, mangaId, chapters[0].id);
+
+        let data = await wrapper.getChapterDetails(source, "a-perverts-daily-life", "cap-tulo-83-50");
 
         expect(data, "No server response").to.exist;
         expect(data, "Empty server response").to.not.be.empty;
@@ -71,17 +71,17 @@ describe('GoldenMangas Tests', function () {
         expect(result.subtitleText, "No subtitle text").to.be.not.null;
     });
 
-    it("Testing Home-Page aquisition", async() => {
+    it("Testing Home-Page aquisition", async () => {
         let homePages = await wrapper.getHomePageSections(source)
         expect(homePages, "No response from server").to.exist
         expect(homePages[0].items, "No items present").to.exist
 
         // Ensure that we can resolve each of the images for the home-page, since these images are generated and not scraped
-        for(let obj of homePages[0].items ?? []) {
+        for (let obj of homePages[0].items ?? []) {
             let axios = require('axios')
             let imageResult = await axios.get(obj.image)
             expect(imageResult.status).to.equal(200)    // Good resolve!
         }
     })
 
-})
+});

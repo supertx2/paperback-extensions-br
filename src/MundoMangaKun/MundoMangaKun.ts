@@ -29,15 +29,7 @@ export const MundoMangaKunInfo: SourceInfo = {
 	websiteBaseURL: BASE_DOMAIN,
 	sourceTags: [
         {
-            text: 'New',
-            type: TagType.GREEN,
-        },
-		{
-            text: 'Beta',
-            type: TagType.RED
-        },
-        {
-            text: 'PT-BR',
+            text: 'Portuguese',
             type: TagType.GREY,
         },
     ],
@@ -48,9 +40,17 @@ export class MundoMangaKun extends Source {
 
 	requestManager = createRequestManager({
 		requestsPerSecond: 3,
-		requestTimeout: 100000
+		requestTimeout: 100000,
+		interceptor: {
+			interceptRequest: async (request) => {
+				request.headers = this.constructHeaders();
+				return request;
+			},
+			interceptResponse: async (response) => response
+		}
 	});
-	readonly cookies = [createCookie({ name: 'set', value: 'h=1', domain: BASE_DOMAIN })]
+	readonly cookies = [createCookie({name: 'set', value: 'h=1', domain: BASE_DOMAIN})]
+
 	cloudflareBypassRequest() {
 		return createRequestObject({
 			url: `${BASE_DOMAIN}`,
@@ -78,12 +78,11 @@ export class MundoMangaKun extends Source {
 		let request = createRequestObject({
 			url: `${BASE_DOMAIN}/projeto/${mangaId}/`,
 			method: "GET",
-			headers: this.constructHeaders()
 		})
 		const data = await this.requestManager.schedule(request, 1)
 
 		let $ = this.cheerio.load(data.data)
-		
+
 		return this.parser.parseChapters($, mangaId);
 	}
 
@@ -94,12 +93,16 @@ export class MundoMangaKun extends Source {
 			url: `${BASE_DOMAIN}/leitor-online/projeto/${mangaId}/${chapterId}/#todas-as-paginas`,
 			method: 'GET',
 			cookies: [
-				createCookie({ name: 'apagarLuzes', value: '0', domain: 'mundomangakun.com.br', path:'/' }),
-				createCookie({ name: 'modoNavegacaoLeitor', value: '#todas-as-paginas', domain: 'mundomangakun.com.br', path:'/' }),
-				createCookie({ name: '_ga', value: 'GA1.3.1857711392.1649606782', domain: 'mundomangakun.com.br', path:'/' }),
-				createCookie({ name: '_gid', value: 'GA1.3.1857711392.1649606782', domain: 'mundomangakun.com.br', path:'/' })
+				createCookie({name: 'apagarLuzes', value: '0', domain: 'mundomangakun.com.br', path: '/'}),
+				createCookie({
+					name: 'modoNavegacaoLeitor',
+					value: '#todas-as-paginas',
+					domain: 'mundomangakun.com.br',
+					path: '/'
+				}),
+				// createCookie({ name: '_ga', value: 'GA1.3.1857711392.1649606782', domain: 'mundomangakun.com.br', path:'/' }),
+				// createCookie({ name: '_gid', value: 'GA1.3.1857711392.1649606782', domain: 'mundomangakun.com.br', path:'/' })
 			],
-			headers: this.constructHeaders()
 		})
 
 		const data = await this.requestManager.schedule(request, 1)
@@ -112,7 +115,6 @@ export class MundoMangaKun extends Source {
 		let request = createRequestObject({
 			url: `${BASE_DOMAIN}/leitor-online/?leitor_titulo_projeto=${query.title}&leitor_autor_projeto=&leitor_genero_projeto=&leitor_status_projeto=&leitor_ordem_projeto=ASC`,
 			method: "GET",
-			headers: this.constructHeaders()
 		})
 
 		const data = await this.requestManager.schedule(request, 1)
@@ -125,14 +127,13 @@ export class MundoMangaKun extends Source {
 
 	async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
 		// Let the app know what the homsections are without filling in the data
-		let mostReadMangas = createHomeSection({ id: 'destaques', title: 'Destaques' })
+		let mostReadMangas = createHomeSection({id: 'destaques', title: 'Destaques'})
 		sectionCallback(mostReadMangas)
 
 
 		let request = createRequestObject({
 			url: BASE_DOMAIN,
 			method: 'GET',
-			headers: this.constructHeaders()
 		})
 
 		const data = await this.requestManager.schedule(request, 2)
@@ -151,12 +152,9 @@ export class MundoMangaKun extends Source {
 		})
 	}
 
-	userAgentRandomizer = `Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:77.0) Gecko/20100101 Firefox/78.0${Math.floor(Math.random() * 100000)}`
 	constructHeaders(headers?: any, refererPath?: string): any {
 		headers = headers ?? {}
-		if (this.userAgentRandomizer !== '') {
-			headers['User-Agent'] = this.userAgentRandomizer
-		}
+		headers['User-Agent'] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.60 Safari/537.36"
 		headers['referer'] = BASE_DOMAIN
 		headers['Host'] = `mundomangakun.com.br`
 		headers['Origin'] = BASE_DOMAIN

@@ -2427,12 +2427,8 @@ exports.GoldenMangasInfo = {
             type: paperback_extensions_common_1.TagType.GREEN
         },
         {
-            text: 'PT-BR',
+            text: 'Portuguese',
             type: paperback_extensions_common_1.TagType.GREY,
-        },
-        {
-            text: 'Beta',
-            type: paperback_extensions_common_1.TagType.RED
         },
         {
             text: "Cloudflare",
@@ -2455,13 +2451,14 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
             requestsPerSecond: 3,
             requestTimeout: 100000,
             interceptor: {
-                interceptRequest: (request) => __awaiter(this, void 0, void 0, function* () { return request; }),
-                interceptResponse: function name(response) {
-                    return __awaiter(this, void 0, void 0, function* () {
-                        response["fixedData"] = response.data || Buffer.from(createByteArray(response.rawData)).toString();
-                        return response;
-                    });
-                }
+                interceptRequest: (request) => __awaiter(this, void 0, void 0, function* () {
+                    request.headers = this.headers;
+                    return request;
+                }),
+                interceptResponse: (response) => __awaiter(this, void 0, void 0, function* () {
+                    response["fixedData"] = response.data || Buffer.from(createByteArray(response.rawData)).toString();
+                    return response;
+                })
             }
         });
     }
@@ -2476,7 +2473,6 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
             let request = createRequestObject({
                 url: `${GOLDENMANGAS_DOMAIN}/mangabr/${mangaId}`,
                 method: 'GET',
-                headers: this.headers
             });
             const response = yield this.requestManager.schedule(request, 1);
             const $ = this.cheerio.load(response.data || response['fixedData']);
@@ -2499,7 +2495,6 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
             let request = createRequestObject({
                 url: `${GOLDENMANGAS_DOMAIN}/mangabr/${mangaId}/${chapterId}`,
                 method: 'GET',
-                headers: this.headers
             });
             const response = yield this.requestManager.schedule(request, 1);
             const $ = this.cheerio.load(response.data || response['fixedData']);
@@ -2509,11 +2504,6 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
     getSearchResults(query, metadata) {
         var _a, _b, _c, _d;
         return __awaiter(this, void 0, void 0, function* () {
-            //console.log("[Debug] Searching for: ");
-            //console.log("Title: " + query.title);
-            //console.log("Parameters: " + Object?.entries(query.parameters).map(e => e[0]).join(', '));
-            //console.log("IncludedTags: " + query.includedTags?.map(e => e.id).join(', '));
-            //console.log("Page: " + metadata?.page);
             const page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
             if (page == -1)
                 return createPagedResults({ results: [], metadata: { page: -1 } });
@@ -2525,7 +2515,6 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
             const request = createRequestObject({
                 url: `${GOLDENMANGAS_DOMAIN}/mangabr?${search}&pagina=${page}`,
                 method: "GET",
-                headers: this.headers
             });
             const response = yield this.requestManager.schedule(request, 1);
             const $ = this.cheerio.load(response.data || response['fixedData']);
@@ -2557,7 +2546,6 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
             let request = createRequestObject({
                 url: `${GOLDENMANGAS_DOMAIN}/index.php?pagina=${page}`,
                 method: 'GET',
-                headers: this.headers
             });
             const response = yield this.requestManager.schedule(request, 1);
             const $ = this.cheerio.load(response.data || response['fixedData']);
@@ -2576,7 +2564,6 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
             let request = createRequestObject({
                 url: GOLDENMANGAS_DOMAIN,
                 method: 'GET',
-                headers: this.headers
             });
             let response = yield this.requestManager.schedule(request, 1);
             let $ = this.cheerio.load(response.data || response['fixedData']);
@@ -2721,7 +2708,7 @@ class Parser {
             const splitedDate = firstColumn.find("span[style]").text().replace('(', '').replace(')', '').trim().split('/').map(i => Number(i));
             let time = new Date(splitedDate[2], splitedDate[1] - 1, splitedDate[0]);
             let id = (_a = $('a', $(obj)).attr('href')) === null || _a === void 0 ? void 0 : _a.replace(`/mangabr/${mangaId}/`, '');
-            let chapNum = Number(id);
+            let chapNum = Number(id) || 0;
             // If we parsed a bad ID out, don't include this in our list
             if (!id) {
                 continue;
@@ -2753,11 +2740,6 @@ class Parser {
         });
     }
     parseSearchResults($, query, metadata) {
-        //console.log("[Debug] Searching for: ");
-        //console.log("Title: " + query.title);
-        //console.log("Parameters: " + Object?.entries(query.parameters).map(e => e[0]).join(', '));
-        //console.log("IncludedTags: " + query.includedTags?.map(e => e.id).join(', '));
-        //console.log("Page: " + metadata?.page);
         var _a, _b;
         const page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
         let mangaTiles = [];

@@ -18,9 +18,8 @@ const BASE_DOMAIN = 'https://mundomangakun.com.br'
 const method = 'GET'
 
 export class Parser {
-
-
-	parseMangaDetails($:any, mangaId: string): Manga {
+	
+	parseMangaDetails($: any, mangaId: string): Manga {
 
 		const $infoElement = $(".main_container_projeto .container-fluid");
 		const $infoText = $infoElement.find(".tabela_info_projeto tr");
@@ -36,7 +35,7 @@ export class Parser {
 			, label: $(e).text().trim()
 		}));
 
-		let tags: TagSection[] = [createTagSection({ id: 'genres', label: 'genres', tags: genres })]
+		let tags: TagSection[] = [createTagSection({id: 'genres', label: 'genres', tags: genres})]
 
 		let summary = $infoElement.find(".conteudo_projeto").text().trim()
 
@@ -54,7 +53,6 @@ export class Parser {
 		})
 	}
 
-
 	parseChapters($: any, mangaId: string): Chapter[] {
 
 		let chapters: Chapter[] = []
@@ -66,7 +64,7 @@ export class Parser {
 
 			const clickEvent = $obj.attr("onclick");
 			const id = clickEvent?.substring(clickEvent.indexOf(mangaId), clickEvent.indexOf(`','tipo'`)).replaceAll('\\', '').replace(`${mangaId}/`, '').split('/')[0];
-			let chapNum = Number(name.replace(/\D/g, ''));
+			let chapNum = Number(name.replace(/\D/g, '')) || 0;
 
 			// If we parsed a bad ID out, don't include this in our list
 			if (!id) {
@@ -84,22 +82,22 @@ export class Parser {
 
 		return chapters
 	}
-
-
+	
 	parseChapterDetails(data: any, mangaId: string, chapterId: string): ChapterDetails {
 
 		let pagesString = data.data
 		const pagesStartIndex = pagesString.indexOf("var paginas = ");
-		pagesString = pagesString.substring(pagesStartIndex, pagesString.length -1)
-		pagesString = pagesString.substring(0, pagesString.indexOf(']') + 1).replace('var paginas = ','');
-		const pagesObject = JSON.parse(pagesString)
+		pagesString = pagesString.substring(pagesStartIndex, pagesString.length - 1);
+		pagesString = pagesString.substring(0, pagesString.indexOf(']') + 1).replace('var paginas = ', '');
+		const pagesObject = JSON.parse(pagesString);
 
+		pagesObject.map( p => encodeURIComponent(p));
 		return createChapterDetails({
 			id: chapterId,
 			mangaId: mangaId,
 			pages: pagesObject,
 			longStrip: false
-		})
+		});
 	}
 
 	parseSearchResults($: any, query: SearchRequest, metadata: any): PagedResults {
@@ -114,7 +112,7 @@ export class Parser {
 			const image = $manga.find('.container_imagem').css('background-image').slice(4, -1).replace(/"/g, "");
 			mangaTiles.push(createMangaTile({
 				id: id!,
-				title: createIconText({ text: title }),
+				title: createIconText({text: title}),
 				image: `${image!}`
 			}))
 
@@ -158,7 +156,7 @@ export class Parser {
 
 			popularMangas.push(createMangaTile({
 				id: id,
-				title: createIconText({ text: title }),
+				title: createIconText({text: title}),
 				image: img
 			}))
 		}
