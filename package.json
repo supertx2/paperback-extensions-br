@@ -17,14 +17,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Paperback-iOS/extensions-official.git"
+    "url": "git+https://github.com/supertx2/paperback-extensions-br.git"
   },
   "author": "Paperback Community",
   "license": "GPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/Paperback-iOS/extensions-official/issues"
+    "url": "https://github.com/supertx2/paperback-extensions-br/issues"
   },
-  "homepage": "https://github.com/Paperback-iOS/extensions-official#readme",
+  "homepage": "https://supertx2.github.io/paperback-extensions-br",
   "devDependencies": {
     "@types/chai": "^4.2.21",
     "@types/chai-as-promised": "^7.1.4",
