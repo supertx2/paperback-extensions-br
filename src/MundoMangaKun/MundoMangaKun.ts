@@ -100,8 +100,6 @@ export class MundoMangaKun extends Source {
 					domain: 'mundomangakun.com.br',
 					path: '/'
 				}),
-				// createCookie({ name: '_ga', value: 'GA1.3.1857711392.1649606782', domain: 'mundomangakun.com.br', path:'/' }),
-				// createCookie({ name: '_gid', value: 'GA1.3.1857711392.1649606782', domain: 'mundomangakun.com.br', path:'/' })
 			],
 		})
 
