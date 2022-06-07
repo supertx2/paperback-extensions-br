@@ -389,6 +389,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MundoMangaKun = exports.MundoMangaKunInfo = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
+const MundoMangaKunParser_1 = require("./MundoMangaKunParser");
 const BASE_DOMAIN = 'https://mundomangakun.com.br';
 const method = 'GET';
 exports.MundoMangaKunInfo = {
@@ -418,6 +419,7 @@ exports.MundoMangaKunInfo = {
 class MundoMangaKun extends paperback_extensions_common_1.Source {
     constructor() {
         super(...arguments);
+        this.parser = new MundoMangaKunParser_1.Parser();
         this.requestManager = createRequestManager({
             requestsPerSecond: 3,
             requestTimeout: 100000
@@ -426,69 +428,25 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
         this.userAgentRandomizer = `Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:77.0) Gecko/20100101 Firefox/78.0${Math.floor(Math.random() * 100000)}`;
     }
     cloudflareBypassRequest() {
-        console.log("cloudflareBypassRequest");
         return createRequestObject({
             url: `${BASE_DOMAIN}`,
             method,
         });
     }
-    // getMangaShareUrl(mangaId: string): string | null { return `${BASE_DOMAIN}/mangabr/${mangaId}` }
     getMangaDetails(mangaId) {
         return __awaiter(this, void 0, void 0, function* () {
             let request = createRequestObject({
                 url: `${BASE_DOMAIN}/projeto/${mangaId}/`,
                 method: 'GET',
-                // cookies: [createCookie({ name: 'apagarLuzes', value: '0', domain: 'mundomangakun.com.br', path:'/' }),
-                // createCookie({ name: 'modoNavegacaoLeitor', value: '#todas-as-paginas', domain: 'mundomangakun.com.br', path:'/' }),
-                // createCookie({ name: '_ga', value: 'GA1.3.1857711392.1649606782', domain: 'mundomangakun.com.br', path:'/' }),
-                // createCookie({ name: '_gid', value: 'GA1.3.1857711392.1649606782', domain: 'mundomangakun.com.br', path:'/' })],
-                headers: this.constructHeaders({
-                // "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-                // "accept-language": "pt-PT,pt;q=0.9,en-US;q=0.8,en;q=0.7"
-                })
             });
-            console.log('getMangaDetails');
             const data = yield this.requestManager.schedule(request, 3);
-            console.log(`getMangaDetails Done. Status ${data.status}, data: ${typeof (data.data)}`);
             let manga = [];
             let $ = this.cheerio.load(data.data);
-            console.log("cheerio Loaded");
-            const $infoElement = $(".main_container_projeto .container-fluid");
-            const $infoText = $infoElement.find(".tabela_info_projeto tr");
-            const titles = [$infoElement.find(".titulo_projeto").first().text().trim()];
-            const image = $infoElement.find('.imagens_projeto_container img').attr('src');
-            const status = $infoText.eq(5).find('td').eq(1).text() == "Em Andamento" ? paperback_extensions_common_1.MangaStatus.ONGOING : paperback_extensions_common_1.MangaStatus.COMPLETED;
-            const author = $infoElement.find(".tabela_info_projeto tr").eq(1).find('td').eq(1).text();
-            const artist = $infoElement.find(".tabela_info_projeto tr").eq(0).find('td').eq(1).text();
-            console.log("Main Info Loaded");
-            const genres = [];
-            $infoElement.find(".generos a").filter((i, e) => !!$(e).text()).toArray().map(e => {
-                var _a;
-                return genres.push({
-                    id: (_a = $(e).attr('href')) === null || _a === void 0 ? void 0 : _a.replace(`${mangaId}/generos/`, '').replace('/', '/'),
-                    label: $(e).text().trim()
-                });
-            });
-            console.log("Tags Loaded");
-            let tags = [createTagSection({ id: 'genres', label: 'genres', tags: genres })];
-            let summary = $infoElement.find(".conteudo_projeto").text().trim();
-            return createManga({
-                id: mangaId,
-                rating: 1,
-                views: 1,
-                titles: titles,
-                image: `${image}`,
-                author: author,
-                artist: artist,
-                status: Number(status),
-                // tags: tags,
-                desc: summary
-            });
+            return this.parser.parseMangaDetails($, mangaId);
         });
     }
     getChapters(mangaId) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('getChapters');
             let request = createRequestObject({
                 url: `${BASE_DOMAIN}/projeto/${mangaId}/`,
                 method: "GET",
@@ -496,31 +454,11 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
             });
             const data = yield this.requestManager.schedule(request, 1);
             let $ = this.cheerio.load(data.data);
-            let chapters = [];
-            for (let obj of $(".capitulos_leitor_online a").toArray()) {
-                const $obj = $(obj);
-                const name = $obj.text();
-                const clickEvent = $obj.attr("onclick");
-                const id = clickEvent === null || clickEvent === void 0 ? void 0 : clickEvent.substring(clickEvent.indexOf(mangaId), clickEvent.indexOf(`','tipo'`)).replaceAll('\\', '').replace(`${mangaId}/`, '').split('/')[0];
-                let chapNum = Number(name.replace(/\D/g, ''));
-                // If we parsed a bad ID out, don't include this in our list
-                if (!id) {
-                    continue;
-                }
-                chapters.push(createChapter({
-                    id: id,
-                    mangaId: mangaId,
-                    chapNum: chapNum,
-                    langCode: paperback_extensions_common_1.LanguageCode.BRAZILIAN,
-                    name: name,
-                }));
-            }
-            return chapters;
+            return this.parser.parseChapters($, mangaId);
         });
     }
     getChapterDetails(mangaId, chapterId) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('getChapterDetails');
             let request = createRequestObject({
                 url: `${BASE_DOMAIN}/leitor-online/projeto/${mangaId}/${chapterId}/#todas-as-paginas`,
                 method: 'GET',
@@ -533,29 +471,10 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
                 headers: this.constructHeaders()
             });
             const data = yield this.requestManager.schedule(request, 1);
-            // let $ = this.cheerio.load(data.data)
-            // let pages: string[] = []
-            let pagesString = data.data;
-            const pagesStartIndex = pagesString.indexOf("var paginas = ");
-            pagesString = pagesString.substring(pagesStartIndex, pagesString.length - 1);
-            pagesString = pagesString.substring(0, pagesString.indexOf(']') + 1).replace('var paginas = ', '');
-            const pagesObject = JSON.parse(pagesString);
-            // Get all of the pages
-            // let pagesImgs = $(".leitor_online_container_capitulo img");
-            // for (let img of pagesImgs.toArray()) {
-            // 	const $img = $(img);
-            // 	pages.push($img.attr("src")!)
-            // }
-            return createChapterDetails({
-                id: chapterId,
-                mangaId: mangaId,
-                pages: pagesObject,
-                longStrip: false
-            });
+            return this.parser.parseChapterDetails(data, mangaId, chapterId);
         });
     }
     getSearchResults(query, metadata) {
-        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             let request = createRequestObject({
                 url: `${BASE_DOMAIN}/leitor-online/?leitor_titulo_projeto=${query.title}&leitor_autor_projeto=&leitor_genero_projeto=&leitor_status_projeto=&leitor_ordem_projeto=ASC`,
@@ -564,24 +483,7 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
             });
             const data = yield this.requestManager.schedule(request, 1);
             const $ = this.cheerio.load(data.data);
-            let mangaTiles = [];
-            // Parse the json context
-            for (let manga of $(".leitor_online_container article").toArray()) {
-                const $manga = $(manga);
-                const $titleA = $manga.find(".titulo_manga_item a");
-                const title = $titleA.text();
-                const id = (_a = $titleA.attr("href")) === null || _a === void 0 ? void 0 : _a.replace(`${BASE_DOMAIN}/projeto/`, '').replace('/', '');
-                const image = $manga.find('.container_imagem').css('background-image').slice(4, -1).replace(/"/g, "");
-                mangaTiles.push(createMangaTile({
-                    id: id,
-                    title: createIconText({ text: title }),
-                    image: `${image}`
-                }));
-            }
-            // Because we're reading JSON, there will never be another page to search through
-            return createPagedResults({
-                results: mangaTiles
-            });
+            return this.parser.parseSearchResults($, query, metadata);
         });
     }
     getHomePageSections(sectionCallback) {
@@ -589,54 +491,19 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
             // Let the app know what the homsections are without filling in the data
             let mostReadMangas = createHomeSection({ id: 'destaques', title: 'Destaques' });
             sectionCallback(mostReadMangas);
-            // Make the request and fill out available titles
             let request = createRequestObject({
                 url: BASE_DOMAIN,
                 method: 'GET',
-                // cookies: this.cookies,
-                // cookies:  [createCookie({ name: 'PHPSESSID', value: 'vaioolegvh5c5l83p9kfeg059m', domain: 'goldenmanga.top', path:'/' })],
                 headers: this.constructHeaders()
             });
             const data = yield this.requestManager.schedule(request, 2);
-            let popularMangas = [];
             let $ = this.cheerio.load(data.data);
-            let context = $(".lancamentos_main_container .container-obras-populares article");
-            for (let obj of context.toArray()) {
-                const $obj = $(obj);
-                let img = $obj.find('.container_imagem').css('background-image').slice(4, -1).replace(/"/g, "");
-                const titleLink = $('a', $(obj)).attr('href');
-                let id = titleLink.replace('https://mundomangakun.com.br/projeto/', '').replace('/', '');
-                const title = id.replaceAll('-', ' ').toLowerCase().replace(/\b[a-z]/g, function (letter) {
-                    return letter.toUpperCase();
-                });
-                // If there was not a valid ID parsed, skip this entry
-                if (!id) {
-                    continue;
-                }
-                // Ensure that this title doesn't exist in the tile list already, as it causes weird glitches if so.
-                // This unfortunately makes this method O(n^2) but there never will be many elements
-                let foundItem = false;
-                for (let item of popularMangas) {
-                    if (item.id == id) {
-                        foundItem = true;
-                        break;
-                    }
-                }
-                if (foundItem) {
-                    continue;
-                }
-                popularMangas.push(createMangaTile({
-                    id: id,
-                    title: createIconText({ text: title }),
-                    image: img
-                }));
-            }
+            const popularMangas = this.parser.parseHomePageSections($);
             mostReadMangas.items = popularMangas;
             sectionCallback(mostReadMangas);
         });
     }
     getCloudflareBypassRequest() {
-        console.log('getCloudflareBypassRequest');
         return createRequestObject({
             url: 'https://mundomangakun.com.br/projeto/gleipnir/',
             method: "GET",
@@ -654,6 +521,135 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
     }
 }
 exports.MundoMangaKun = MundoMangaKun;
+
+},{"./MundoMangaKunParser":49,"paperback-extensions-common":5}],49:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Parser = void 0;
+const paperback_extensions_common_1 = require("paperback-extensions-common");
+const BASE_DOMAIN = 'https://mundomangakun.com.br';
+const method = 'GET';
+class Parser {
+    parseMangaDetails($, mangaId) {
+        const $infoElement = $(".main_container_projeto .container-fluid");
+        const $infoText = $infoElement.find(".tabela_info_projeto tr");
+        const titles = [$infoElement.find(".titulo_projeto").first().text().trim()];
+        const image = $infoElement.find('.imagens_projeto_container img').attr('src');
+        const status = $infoText.eq(5).find('td').eq(1).text() == "Em Andamento" ? paperback_extensions_common_1.MangaStatus.ONGOING : paperback_extensions_common_1.MangaStatus.COMPLETED;
+        const author = $infoElement.find(".tabela_info_projeto tr").eq(1).find('td').eq(1).text();
+        const artist = $infoElement.find(".tabela_info_projeto tr").eq(0).find('td').eq(1).text();
+        const genres = [];
+        $infoElement.find(".generos a").filter((i, e) => !!$(e).text()).toArray().map(e => {
+            var _a;
+            return genres.push({
+                id: (_a = $(e).attr('href')) === null || _a === void 0 ? void 0 : _a.replace(`${mangaId}/generos/`, '').replace('/', '/'),
+                label: $(e).text().trim()
+            });
+        });
+        let tags = [createTagSection({ id: 'genres', label: 'genres', tags: genres })];
+        let summary = $infoElement.find(".conteudo_projeto").text().trim();
+        return createManga({
+            id: mangaId,
+            rating: 1,
+            views: 1,
+            titles: titles,
+            image: `${image}`,
+            author: author,
+            artist: artist,
+            status: Number(status),
+            // tags: tags,
+            desc: summary
+        });
+    }
+    parseChapters($, mangaId) {
+        let chapters = [];
+        for (let obj of $(".capitulos_leitor_online a").toArray()) {
+            const $obj = $(obj);
+            const name = $obj.text();
+            const clickEvent = $obj.attr("onclick");
+            const id = clickEvent === null || clickEvent === void 0 ? void 0 : clickEvent.substring(clickEvent.indexOf(mangaId), clickEvent.indexOf(`','tipo'`)).replaceAll('\\', '').replace(`${mangaId}/`, '').split('/')[0];
+            let chapNum = Number(name.replace(/\D/g, ''));
+            // If we parsed a bad ID out, don't include this in our list
+            if (!id) {
+                continue;
+            }
+            chapters.push(createChapter({
+                id: id,
+                mangaId: mangaId,
+                chapNum: chapNum,
+                langCode: paperback_extensions_common_1.LanguageCode.BRAZILIAN,
+                name: name,
+            }));
+        }
+        return chapters;
+    }
+    parseChapterDetails(data, mangaId, chapterId) {
+        let pagesString = data.data;
+        const pagesStartIndex = pagesString.indexOf("var paginas = ");
+        pagesString = pagesString.substring(pagesStartIndex, pagesString.length - 1);
+        pagesString = pagesString.substring(0, pagesString.indexOf(']') + 1).replace('var paginas = ', '');
+        const pagesObject = JSON.parse(pagesString);
+        return createChapterDetails({
+            id: chapterId,
+            mangaId: mangaId,
+            pages: pagesObject,
+            longStrip: false
+        });
+    }
+    parseSearchResults($, query, metadata) {
+        var _a;
+        let mangaTiles = [];
+        for (let manga of $(".leitor_online_container article").toArray()) {
+            const $manga = $(manga);
+            const $titleA = $manga.find(".titulo_manga_item a");
+            const title = $titleA.text();
+            const id = (_a = $titleA.attr("href")) === null || _a === void 0 ? void 0 : _a.replace(`${BASE_DOMAIN}/projeto/`, '').replace('/', '');
+            const image = $manga.find('.container_imagem').css('background-image').slice(4, -1).replace(/"/g, "");
+            mangaTiles.push(createMangaTile({
+                id: id,
+                title: createIconText({ text: title }),
+                image: `${image}`
+            }));
+        }
+        return createPagedResults({
+            results: mangaTiles
+        });
+    }
+    parseHomePageSections($) {
+        let popularMangas = [];
+        const context = $(".lancamentos_main_container .container-obras-populares article");
+        for (let obj of context.toArray()) {
+            const $obj = $(obj);
+            let img = $obj.find('.container_imagem').css('background-image').slice(4, -1).replace(/"/g, "");
+            const titleLink = $('a', $(obj)).attr('href');
+            let id = titleLink.replace('https://mundomangakun.com.br/projeto/', '').replace('/', '');
+            const title = id.replaceAll('-', ' ').toLowerCase().replace(/\b[a-z]/g, function (letter) {
+                return letter.toUpperCase();
+            });
+            // If there was not a valid ID parsed, skip this entry
+            if (!id) {
+                continue;
+            }
+            let foundItem = false;
+            for (let item of popularMangas) {
+                if (item.id == id) {
+                    foundItem = true;
+                    break;
+                }
+            }
+            if (foundItem) {
+                continue;
+            }
+            popularMangas.push(createMangaTile({
+                id: id,
+                title: createIconText({ text: title }),
+                image: img
+            }));
+        }
+        return popularMangas;
+    }
+}
+exports.Parser = Parser;
 
 },{"paperback-extensions-common":5}]},{},[48])(48)
 });
