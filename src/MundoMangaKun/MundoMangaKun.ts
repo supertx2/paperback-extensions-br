@@ -1,17 +1,15 @@
 import {
 	Source,
 	Manga,
-	MangaStatus,
 	Chapter,
 	ChapterDetails,
 	HomeSection,
-	MangaTile,
 	SearchRequest,
 	LanguageCode,
-	TagSection,
 	PagedResults,
 	SourceInfo,
-	Tag, ContentRating, TagType,
+	ContentRating,
+	TagType,
 } from 'paperback-extensions-common';
 
 import {Parser} from './MundoMangaKunParser';
@@ -27,9 +25,10 @@ export const MundoMangaKunInfo: SourceInfo = {
 	icon: 'icon.png',
 	contentRating: ContentRating.ADULT,
 	websiteBaseURL: BASE_DOMAIN,
+	language: LanguageCode.PORTUGUESE,
 	sourceTags: [
 		{
-			text: 'Portuguese',
+			text: LanguageCode.PORTUGUESE,
 			type: TagType.GREY,
 		},
 	],
@@ -105,7 +104,7 @@ export class MundoMangaKun extends Source {
 		return this.parser.parseChapterDetails(data, mangaId, chapterId);
 	}
 
-	async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
+	async getSearchResults(query: SearchRequest, _metadata: any): Promise<PagedResults> {
 
 		let request = createRequestObject({
 			url: `${BASE_DOMAIN}/leitor-online/?leitor_titulo_projeto=${query.title}&leitor_autor_projeto=&leitor_genero_projeto=&leitor_status_projeto=&leitor_ordem_projeto=ASC`,
@@ -115,11 +114,11 @@ export class MundoMangaKun extends Source {
 		const data = await this.requestManager.schedule(request, 1);
 		const $ = this.cheerio.load(data.data);
 
-		return this.parser.parseSearchResults($, query, metadata);
+		return this.parser.parseSearchResults($);
 	}
 
 
-	async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
+	override async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
 		// Let the app know what the homsections are without filling in the data
 		let mostReadMangas = createHomeSection({id: 'destaques', title: 'Destaques'});
 		sectionCallback(mostReadMangas);
@@ -138,7 +137,7 @@ export class MundoMangaKun extends Source {
 		sectionCallback(mostReadMangas);
 	}
 
-	getCloudflareBypassRequest() {
+	override getCloudflareBypassRequest() {
 		return createRequestObject({
 			url: 'https://mundomangakun.com.br/projeto/gleipnir/',
 			method: 'GET',

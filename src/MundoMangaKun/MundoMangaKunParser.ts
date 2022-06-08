@@ -1,21 +1,15 @@
 import {
-	Source,
 	Manga,
 	MangaStatus,
 	Chapter,
 	ChapterDetails,
-	HomeSection,
 	MangaTile,
-	SearchRequest,
 	LanguageCode,
-	TagSection,
 	PagedResults,
-	SourceInfo,
-	Tag, ContentRating, TagType,
+	Tag,
 } from 'paperback-extensions-common';
 
 const BASE_DOMAIN = 'https://mundomangakun.com.br';
-const method = 'GET';
 
 export class Parser {
 
@@ -30,12 +24,12 @@ export class Parser {
 		const artist = $infoElement.find('.tabela_info_projeto tr').eq(0).find('td').eq(1).text();
 
 		const genres: Tag[] = [];
-		$infoElement.find('.generos a').filter((i, e) => !!$(e).text()).toArray().map(e => genres.push({
+		$infoElement.find('.generos a').filter((_: number, e: Element) => !!$(e).text()).toArray().map((e: Element) => genres.push({
 			id: $(e).attr('href')?.replace(`${mangaId}/generos/`, '').replace('/', '/')!
 			, label: $(e).text().trim(),
 		}));
 
-		let tags: TagSection[] = [createTagSection({id: 'genres', label: 'genres', tags: genres})];
+		//let tags: TagSection[] = [createTagSection({id: 'genres', label: 'genres', tags: genres})];
 
 		let summary = $infoElement.find('.conteudo_projeto').text().trim();
 
@@ -99,7 +93,7 @@ export class Parser {
 		});
 	}
 
-	parseSearchResults($: any, query: SearchRequest, metadata: any): PagedResults {
+	parseSearchResults($: any): PagedResults {
 		let mangaTiles: MangaTile[] = [];
 
 		for (let manga of $('.leitor_online_container article').toArray()) {
@@ -131,7 +125,7 @@ export class Parser {
 			let img = $obj.find('.container_imagem').css('background-image').slice(4, -1).replace(/"/g, '');
 			const titleLink = $('a', $(obj)).attr('href')!;
 			let id = titleLink.replace('https://mundomangakun.com.br/projeto/', '').replace('/', '');
-			const title = id.replaceAll('-', ' ').toLowerCase().replace(/\b[a-z]/g, function (letter) {
+			const title = id.replaceAll('-', ' ').toLowerCase().replace(/\b[a-z]/g, function (letter: string) {
 				return letter.toUpperCase();
 			});
 

@@ -1,19 +1,16 @@
 import {
-	Source,
 	Manga,
 	MangaStatus,
 	Chapter,
 	ChapterDetails,
-	HomeSection,
 	MangaTile,
-	ContentRating,
 	SearchRequest,
 	LanguageCode,
 	TagSection,
 	PagedResults,
-	SourceInfo,
-	Tag, TagType, MangaUpdates,
+	Tag,
 } from 'paperback-extensions-common';
+import Element = cheerio.Element;
 
 const GOLDENMANGAS_DOMAIN = 'https://goldenmanga.top';
 
@@ -21,8 +18,6 @@ export class Parser {
 
 	parseMangaDetails($: any, mangaId: string): Manga {
 
-		let manga: Manga[] = [];
-		const infoElement = $('div.row > div.col-sm-8 > div.row').first();
 		const firstColumn = $('div.col-sm-4.text-right > img').first();
 		const secondColumn = $('div.col-sm-8').first();
 
@@ -35,7 +30,7 @@ export class Parser {
 		const rating = Number(secondColumn.find('h2').eq(1).text().replace('#', '').split(' ')[0]);
 
 		let genres: Tag[] = [];
-		secondColumn.find('h5').first().find('a').filter((i, e) => !!$(e).text()).toArray().map(e => {
+		secondColumn.find('h5').first().find('a').filter((_: Number, e: Element) => !!$(e).text()).toArray().map((e: Element) => {
 			const idString = $(e).attr('href').replace('..', '').replace('/mangabr?genero=', '');
 			if (!idString)
 				return;
@@ -68,11 +63,10 @@ export class Parser {
 		for (let obj of $('ul#capitulos li.row').toArray()) {
 			const $obj = $(obj);
 			const firstColumn = $obj.find('a > div.col-sm-5');
-			const secondColumn = $obj.find('div.col-sm-5.text-right a[href^=\'http\']');
 
 			const rawName = firstColumn.text();
 			const name = rawName.substring(0, rawName.indexOf('(')).trim();
-			const splitedDate = firstColumn.find('span[style]').text().replace('(', '').replace(')', '').trim().split('/').map(i => Number(i));
+			const splitedDate = firstColumn.find('span[style]').text().replace('(', '').replace(')', '').trim().split('/').map((i: string) => Number(i));
 
 			let time = new Date(splitedDate[2], splitedDate[1] - 1, splitedDate[0]);
 
@@ -116,7 +110,7 @@ export class Parser {
 		});
 	}
 
-	parseSearchResults($: any, query: SearchRequest, metadata: any): PagedResults {
+	parseSearchResults($: any, _query: SearchRequest, metadata: any): PagedResults {
 
 		const page = metadata?.page ?? 1;
 		let mangaTiles: MangaTile[] = [];
@@ -150,7 +144,7 @@ export class Parser {
 
 	}
 
-	parseUpdatedMangaGetIds($: any, page: number, time: Date, ids: string[]) {
+	parseUpdatedMangaGetIds($: any, time: Date, ids: string[]) {
 
 		let foundIds: string[] = [];
 		let loadNextPage = true;
@@ -159,7 +153,7 @@ export class Parser {
 			const $obj = $(obj);
 			let id = $obj.find('a').first().attr('href')?.replace('/mangabr/', '');
 
-			const updateTimeSplied = $obj.find('.dataAtualizacao').text()?.trim()?.split('/').map(i => Number(i));
+			const updateTimeSplied = $obj.find('.dataAtualizacao').text()?.trim()?.split('/').map((i: string) => Number(i));
 			let updateTime: Date;
 			if (!updateTimeSplied || updateTimeSplied.length !== 3)
 				continue;
@@ -178,7 +172,7 @@ export class Parser {
 		return {foundIds: foundIds, loadNextPage: loadNextPage};
 	}
 
-	parseHomePageMostReadMangas = ($): MangaTile[] => {
+	parseHomePageMostReadMangas = ($: any): MangaTile[] => {
 		let popularMangas: MangaTile[] = [];
 
 		let context = $('div#maisLidos div.itemmanga');
@@ -202,7 +196,7 @@ export class Parser {
 		return popularMangas;
 	};
 
-	parseHomePageLatestUpdates = ($): MangaTile[] => {
+	parseHomePageLatestUpdates = ($: any): MangaTile[] => {
 		let popularMangas: MangaTile[] = [];
 
 		let context = $('#response .atualizacao');
@@ -226,7 +220,7 @@ export class Parser {
 		return popularMangas;
 	};
 
-	parseHomePageNewReleases = ($): MangaTile[] => {
+	parseHomePageNewReleases = ($: any): MangaTile[] => {
 		let popularMangas: MangaTile[] = [];
 
 		let context = $('.manga-novo .row');

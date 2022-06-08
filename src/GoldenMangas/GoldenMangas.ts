@@ -1,21 +1,20 @@
 import {
 	Source,
 	Manga,
-	MangaStatus,
 	Chapter,
 	ChapterDetails,
 	HomeSection,
-	MangaTile,
 	ContentRating,
 	SearchRequest,
-	LanguageCode,
 	TagSection,
+	LanguageCode,
 	PagedResults,
 	SourceInfo,
-	Tag, TagType, MangaUpdates,
+	TagType, MangaUpdates,
 } from 'paperback-extensions-common';
 
 import {Parser} from './GoldenMangasParser';
+import {GMRequestManager, GMResponse} from './GoldenMangasHelper';
 
 const GOLDENMANGAS_DOMAIN = 'https://goldenmanga.top';
 
@@ -28,13 +27,14 @@ export const GoldenMangasInfo: SourceInfo = {
 	icon: 'icon.jpg',
 	contentRating: ContentRating.ADULT,
 	websiteBaseURL: GOLDENMANGAS_DOMAIN,
+	language: LanguageCode.PORTUGUESE,
 	sourceTags: [
 		{
 			text: 'Notifications',
 			type: TagType.GREEN,
 		},
 		{
-			text: 'Portuguese',
+			text: LanguageCode.PORTUGUESE,
 			type: TagType.GREY,
 		},
 		{
@@ -61,14 +61,14 @@ export class GoldenMangas extends Source {
 				request.headers = this.headers;
 				return request;
 			},
-			interceptResponse: async (response) => {
+			interceptResponse: async (response: GMResponse) => {
 				response['fixedData'] = response.data || Buffer.from(createByteArray(response.rawData)).toString();
 				return response;
 			},
 		},
-	});
+	}) as GMRequestManager;
 
-	getCloudflareBypassRequest() {
+	override getCloudflareBypassRequest() {
 		return createRequestObject({
 			url: GOLDENMANGAS_DOMAIN,
 			method: 'GET',
@@ -170,7 +170,7 @@ export class GoldenMangas extends Source {
 		const response = await this.requestManager.schedule(request, 1);
 		const $ = this.cheerio.load(response.data || response['fixedData']);
 
-		return this.parser.parseUpdatedMangaGetIds($, page, time, ids);
+		return this.parser.parseUpdatedMangaGetIds($, time, ids);
 	}
 
 	override async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {

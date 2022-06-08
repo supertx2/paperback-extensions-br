@@ -2991,13 +2991,14 @@ exports.GoldenMangasInfo = {
     icon: 'icon.jpg',
     contentRating: paperback_extensions_common_1.ContentRating.ADULT,
     websiteBaseURL: GOLDENMANGAS_DOMAIN,
+    language: paperback_extensions_common_1.LanguageCode.PORTUGUESE,
     sourceTags: [
         {
             text: 'Notifications',
             type: paperback_extensions_common_1.TagType.GREEN,
         },
         {
-            text: 'Portuguese',
+            text: paperback_extensions_common_1.LanguageCode.PORTUGUESE,
             type: paperback_extensions_common_1.TagType.GREY,
         },
         {
@@ -3119,7 +3120,7 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
             });
             const response = yield this.requestManager.schedule(request, 1);
             const $ = this.cheerio.load(response.data || response['fixedData']);
-            return this.parser.parseUpdatedMangaGetIds($, page, time, ids);
+            return this.parser.parseUpdatedMangaGetIds($, time, ids);
         });
     }
     getHomePageSections(sectionCallback) {
@@ -3232,8 +3233,6 @@ class Parser {
         };
     }
     parseMangaDetails($, mangaId) {
-        let manga = [];
-        const infoElement = $('div.row > div.col-sm-8 > div.row').first();
         const firstColumn = $('div.col-sm-4.text-right > img').first();
         const secondColumn = $('div.col-sm-8').first();
         const titles = [secondColumn.find('h2').eq(0).text().trim()];
@@ -3243,7 +3242,7 @@ class Parser {
         const artist = secondColumn.find('h5:contains(Artista)').text();
         const rating = Number(secondColumn.find('h2').eq(1).text().replace('#', '').split(' ')[0]);
         let genres = [];
-        secondColumn.find('h5').first().find('a').filter((i, e) => !!$(e).text()).toArray().map(e => {
+        secondColumn.find('h5').first().find('a').filter((_, e) => !!$(e).text()).toArray().map((e) => {
             const idString = $(e).attr('href').replace('..', '').replace('/mangabr?genero=', '');
             if (!idString)
                 return;
@@ -3272,10 +3271,9 @@ class Parser {
         for (let obj of $('ul#capitulos li.row').toArray()) {
             const $obj = $(obj);
             const firstColumn = $obj.find('a > div.col-sm-5');
-            const secondColumn = $obj.find('div.col-sm-5.text-right a[href^=\'http\']');
             const rawName = firstColumn.text();
             const name = rawName.substring(0, rawName.indexOf('(')).trim();
-            const splitedDate = firstColumn.find('span[style]').text().replace('(', '').replace(')', '').trim().split('/').map(i => Number(i));
+            const splitedDate = firstColumn.find('span[style]').text().replace('(', '').replace(')', '').trim().split('/').map((i) => Number(i));
             let time = new Date(splitedDate[2], splitedDate[1] - 1, splitedDate[0]);
             let id = (_a = $('a', $(obj)).attr('href')) === null || _a === void 0 ? void 0 : _a.replace(`/mangabr/${mangaId}/`, '');
             let chapNum = Number(id) || 0;
@@ -3309,7 +3307,7 @@ class Parser {
             longStrip: false,
         });
     }
-    parseSearchResults($, query, metadata) {
+    parseSearchResults($, _query, metadata) {
         var _a, _b;
         const page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
         let mangaTiles = [];
@@ -3337,7 +3335,7 @@ class Parser {
             },
         });
     }
-    parseUpdatedMangaGetIds($, page, time, ids) {
+    parseUpdatedMangaGetIds($, time, ids) {
         var _a, _b, _c;
         let foundIds = [];
         let loadNextPage = true;
@@ -3345,7 +3343,7 @@ class Parser {
         for (let obj of context.toArray()) {
             const $obj = $(obj);
             let id = (_a = $obj.find('a').first().attr('href')) === null || _a === void 0 ? void 0 : _a.replace('/mangabr/', '');
-            const updateTimeSplied = (_c = (_b = $obj.find('.dataAtualizacao').text()) === null || _b === void 0 ? void 0 : _b.trim()) === null || _c === void 0 ? void 0 : _c.split('/').map(i => Number(i));
+            const updateTimeSplied = (_c = (_b = $obj.find('.dataAtualizacao').text()) === null || _b === void 0 ? void 0 : _b.trim()) === null || _c === void 0 ? void 0 : _c.split('/').map((i) => Number(i));
             let updateTime;
             if (!updateTimeSplied || updateTimeSplied.length !== 3)
                 continue;

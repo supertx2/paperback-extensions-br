@@ -401,9 +401,10 @@ exports.MundoMangaKunInfo = {
     icon: 'icon.png',
     contentRating: paperback_extensions_common_1.ContentRating.ADULT,
     websiteBaseURL: BASE_DOMAIN,
+    language: paperback_extensions_common_1.LanguageCode.PORTUGUESE,
     sourceTags: [
         {
-            text: 'Portuguese',
+            text: paperback_extensions_common_1.LanguageCode.PORTUGUESE,
             type: paperback_extensions_common_1.TagType.GREY,
         },
     ],
@@ -471,7 +472,7 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
             return this.parser.parseChapterDetails(data, mangaId, chapterId);
         });
     }
-    getSearchResults(query, metadata) {
+    getSearchResults(query, _metadata) {
         return __awaiter(this, void 0, void 0, function* () {
             let request = createRequestObject({
                 url: `${BASE_DOMAIN}/leitor-online/?leitor_titulo_projeto=${query.title}&leitor_autor_projeto=&leitor_genero_projeto=&leitor_status_projeto=&leitor_ordem_projeto=ASC`,
@@ -479,7 +480,7 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
             });
             const data = yield this.requestManager.schedule(request, 1);
             const $ = this.cheerio.load(data.data);
-            return this.parser.parseSearchResults($, query, metadata);
+            return this.parser.parseSearchResults($);
         });
     }
     getHomePageSections(sectionCallback) {
@@ -523,7 +524,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Parser = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 const BASE_DOMAIN = 'https://mundomangakun.com.br';
-const method = 'GET';
 class Parser {
     parseMangaDetails($, mangaId) {
         const $infoElement = $('.main_container_projeto .container-fluid');
@@ -534,14 +534,14 @@ class Parser {
         const author = $infoElement.find('.tabela_info_projeto tr').eq(1).find('td').eq(1).text();
         const artist = $infoElement.find('.tabela_info_projeto tr').eq(0).find('td').eq(1).text();
         const genres = [];
-        $infoElement.find('.generos a').filter((i, e) => !!$(e).text()).toArray().map(e => {
+        $infoElement.find('.generos a').filter((_, e) => !!$(e).text()).toArray().map((e) => {
             var _a;
             return genres.push({
                 id: (_a = $(e).attr('href')) === null || _a === void 0 ? void 0 : _a.replace(`${mangaId}/generos/`, '').replace('/', '/'),
                 label: $(e).text().trim(),
             });
         });
-        let tags = [createTagSection({ id: 'genres', label: 'genres', tags: genres })];
+        //let tags: TagSection[] = [createTagSection({id: 'genres', label: 'genres', tags: genres})];
         let summary = $infoElement.find('.conteudo_projeto').text().trim();
         return createManga({
             id: mangaId,
@@ -591,7 +591,7 @@ class Parser {
             longStrip: false,
         });
     }
-    parseSearchResults($, query, metadata) {
+    parseSearchResults($) {
         var _a;
         let mangaTiles = [];
         for (let manga of $('.leitor_online_container article').toArray()) {

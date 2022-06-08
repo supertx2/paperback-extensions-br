@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import cheerio from 'cheerio'
 import {APIWrapper, SearchRequest, Source} from 'paperback-extensions-common';
 import { MundoMangaKun as MundoMangaKun } from '../MundoMangaKun/MundoMangaKun';

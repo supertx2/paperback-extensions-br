@@ -1,10 +1,11 @@
+// @ts-nocheck
+
 import cheerio from 'cheerio'
 import {APIWrapper, SearchRequest, Source} from 'paperback-extensions-common';
 import { GoldenMangas as GoldenMangas } from '../GoldenMangas/GoldenMangas';
 import axios from "axios";
 
 describe('GoldenMangas Tests', function () {
-
 	var wrapper: APIWrapper = new APIWrapper();
 	var source: Source = new GoldenMangas(cheerio);
 	var chai = require('chai'), expect = chai.expect, should = chai.should();
