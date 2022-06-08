@@ -2988,7 +2988,7 @@ exports.MundoMangaKunInfo = {
     description: 'Extension that pulls manga from mundomangakun.com.brp',
     author: 'SuperTx2',
     authorWebsite: 'https://github.com/supertx2',
-    icon: "icon.png",
+    icon: 'icon.png',
     contentRating: paperback_extensions_common_1.ContentRating.ADULT,
     websiteBaseURL: BASE_DOMAIN,
     sourceTags: [
@@ -3007,13 +3007,12 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
             requestTimeout: 100000,
             interceptor: {
                 interceptRequest: (request) => __awaiter(this, void 0, void 0, function* () {
-                    request.headers = this.constructHeaders();
+                    request.headers = this.constructHeaders(request.url);
                     return request;
                 }),
-                interceptResponse: (response) => __awaiter(this, void 0, void 0, function* () { return response; })
-            }
+                interceptResponse: (response) => __awaiter(this, void 0, void 0, function* () { return response; }),
+            },
         });
-        this.cookies = [createCookie({ name: 'set', value: 'h=1', domain: BASE_DOMAIN })];
     }
     cloudflareBypassRequest() {
         return createRequestObject({
@@ -3028,7 +3027,6 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
                 method: 'GET',
             });
             const data = yield this.requestManager.schedule(request, 3);
-            let manga = [];
             let $ = this.cheerio.load(data.data);
             return this.parser.parseMangaDetails($, mangaId);
         });
@@ -3037,7 +3035,7 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
         return __awaiter(this, void 0, void 0, function* () {
             let request = createRequestObject({
                 url: `${BASE_DOMAIN}/projeto/${mangaId}/`,
-                method: "GET",
+                method: 'GET',
             });
             const data = yield this.requestManager.schedule(request, 1);
             let $ = this.cheerio.load(data.data);
@@ -3055,10 +3053,8 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
                         name: 'modoNavegacaoLeitor',
                         value: '#todas-as-paginas',
                         domain: 'mundomangakun.com.br',
-                        path: '/'
+                        path: '/',
                     }),
-                    // createCookie({ name: '_ga', value: 'GA1.3.1857711392.1649606782', domain: 'mundomangakun.com.br', path:'/' }),
-                    // createCookie({ name: '_gid', value: 'GA1.3.1857711392.1649606782', domain: 'mundomangakun.com.br', path:'/' })
                 ],
             });
             const data = yield this.requestManager.schedule(request, 1);
@@ -3069,7 +3065,7 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
         return __awaiter(this, void 0, void 0, function* () {
             let request = createRequestObject({
                 url: `${BASE_DOMAIN}/leitor-online/?leitor_titulo_projeto=${query.title}&leitor_autor_projeto=&leitor_genero_projeto=&leitor_status_projeto=&leitor_ordem_projeto=ASC`,
-                method: "GET",
+                method: 'GET',
             });
             const data = yield this.requestManager.schedule(request, 1);
             const $ = this.cheerio.load(data.data);
@@ -3095,15 +3091,17 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
     getCloudflareBypassRequest() {
         return createRequestObject({
             url: 'https://mundomangakun.com.br/projeto/gleipnir/',
-            method: "GET",
+            method: 'GET',
         });
     }
-    constructHeaders(headers, refererPath) {
+    constructHeaders(url, headers) {
         headers = headers !== null && headers !== void 0 ? headers : {};
-        headers['User-Agent'] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.60 Safari/537.36";
-        headers['referer'] = BASE_DOMAIN;
-        headers['Host'] = `mundomangakun.com.br`;
-        headers['Origin'] = BASE_DOMAIN;
+        headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.60 Safari/537.36';
+        if (url && url.includes('mundomangakun.com.br')) {
+            headers['referer'] = BASE_DOMAIN;
+            headers['Host'] = `mundomangakun.com.br`;
+            headers['Origin'] = BASE_DOMAIN;
+        }
         return headers;
     }
 }
@@ -3118,23 +3116,23 @@ const BASE_DOMAIN = 'https://mundomangakun.com.br';
 const method = 'GET';
 class Parser {
     parseMangaDetails($, mangaId) {
-        const $infoElement = $(".main_container_projeto .container-fluid");
-        const $infoText = $infoElement.find(".tabela_info_projeto tr");
-        const titles = [$infoElement.find(".titulo_projeto").first().text().trim()];
+        const $infoElement = $('.main_container_projeto .container-fluid');
+        const $infoText = $infoElement.find('.tabela_info_projeto tr');
+        const titles = [$infoElement.find('.titulo_projeto').first().text().trim()];
         const image = $infoElement.find('.imagens_projeto_container img').attr('src');
-        const status = $infoText.eq(5).find('td').eq(1).text() == "Em Andamento" ? paperback_extensions_common_1.MangaStatus.ONGOING : paperback_extensions_common_1.MangaStatus.COMPLETED;
-        const author = $infoElement.find(".tabela_info_projeto tr").eq(1).find('td').eq(1).text();
-        const artist = $infoElement.find(".tabela_info_projeto tr").eq(0).find('td').eq(1).text();
+        const status = $infoText.eq(5).find('td').eq(1).text() == 'Em Andamento' ? paperback_extensions_common_1.MangaStatus.ONGOING : paperback_extensions_common_1.MangaStatus.COMPLETED;
+        const author = $infoElement.find('.tabela_info_projeto tr').eq(1).find('td').eq(1).text();
+        const artist = $infoElement.find('.tabela_info_projeto tr').eq(0).find('td').eq(1).text();
         const genres = [];
-        $infoElement.find(".generos a").filter((i, e) => !!$(e).text()).toArray().map(e => {
+        $infoElement.find('.generos a').filter((i, e) => !!$(e).text()).toArray().map(e => {
             var _a;
             return genres.push({
                 id: (_a = $(e).attr('href')) === null || _a === void 0 ? void 0 : _a.replace(`${mangaId}/generos/`, '').replace('/', '/'),
-                label: $(e).text().trim()
+                label: $(e).text().trim(),
             });
         });
         let tags = [createTagSection({ id: 'genres', label: 'genres', tags: genres })];
-        let summary = $infoElement.find(".conteudo_projeto").text().trim();
+        let summary = $infoElement.find('.conteudo_projeto').text().trim();
         return createManga({
             id: mangaId,
             rating: 1,
@@ -3145,15 +3143,15 @@ class Parser {
             artist: artist,
             status: Number(status),
             // tags: tags,
-            desc: summary
+            desc: summary,
         });
     }
     parseChapters($, mangaId) {
         let chapters = [];
-        for (let obj of $(".capitulos_leitor_online a").toArray()) {
+        for (let obj of $('.capitulos_leitor_online a').toArray()) {
             const $obj = $(obj);
             const name = $obj.text();
-            const clickEvent = $obj.attr("onclick");
+            const clickEvent = $obj.attr('onclick');
             const id = clickEvent === null || clickEvent === void 0 ? void 0 : clickEvent.substring(clickEvent.indexOf(mangaId), clickEvent.indexOf(`','tipo'`)).replaceAll('\\', '').replace(`${mangaId}/`, '').split('/')[0];
             let chapNum = Number(name.replace(/\D/g, '')) || 0;
             // If we parsed a bad ID out, don't include this in our list
@@ -3172,43 +3170,42 @@ class Parser {
     }
     parseChapterDetails(data, mangaId, chapterId) {
         let pagesString = data.data;
-        const pagesStartIndex = pagesString.indexOf("var paginas = ");
+        const pagesStartIndex = pagesString.indexOf('var paginas = ');
         pagesString = pagesString.substring(pagesStartIndex, pagesString.length - 1);
         pagesString = pagesString.substring(0, pagesString.indexOf(']') + 1).replace('var paginas = ', '');
         const pagesObject = JSON.parse(pagesString);
-        pagesObject.map(p => encodeURIComponent(p));
         return createChapterDetails({
             id: chapterId,
             mangaId: mangaId,
             pages: pagesObject,
-            longStrip: false
+            longStrip: false,
         });
     }
     parseSearchResults($, query, metadata) {
         var _a;
         let mangaTiles = [];
-        for (let manga of $(".leitor_online_container article").toArray()) {
+        for (let manga of $('.leitor_online_container article').toArray()) {
             const $manga = $(manga);
-            const $titleA = $manga.find(".titulo_manga_item a");
+            const $titleA = $manga.find('.titulo_manga_item a');
             const title = $titleA.text();
-            const id = (_a = $titleA.attr("href")) === null || _a === void 0 ? void 0 : _a.replace(`${BASE_DOMAIN}/projeto/`, '').replace('/', '');
-            const image = $manga.find('.container_imagem').css('background-image').slice(4, -1).replace(/"/g, "");
+            const id = (_a = $titleA.attr('href')) === null || _a === void 0 ? void 0 : _a.replace(`${BASE_DOMAIN}/projeto/`, '').replace('/', '');
+            const image = $manga.find('.container_imagem').css('background-image').slice(4, -1).replace(/"/g, '');
             mangaTiles.push(createMangaTile({
                 id: id,
                 title: createIconText({ text: title }),
-                image: `${image}`
+                image: `${image}`,
             }));
         }
         return createPagedResults({
-            results: mangaTiles
+            results: mangaTiles,
         });
     }
     parseHomePageSections($) {
         let popularMangas = [];
-        const context = $(".lancamentos_main_container .container-obras-populares article");
+        const context = $('.lancamentos_main_container .container-obras-populares article');
         for (let obj of context.toArray()) {
             const $obj = $(obj);
-            let img = $obj.find('.container_imagem').css('background-image').slice(4, -1).replace(/"/g, "");
+            let img = $obj.find('.container_imagem').css('background-image').slice(4, -1).replace(/"/g, '');
             const titleLink = $('a', $(obj)).attr('href');
             let id = titleLink.replace('https://mundomangakun.com.br/projeto/', '').replace('/', '');
             const title = id.replaceAll('-', ' ').toLowerCase().replace(/\b[a-z]/g, function (letter) {
@@ -3231,7 +3228,7 @@ class Parser {
             popularMangas.push(createMangaTile({
                 id: id,
                 title: createIconText({ text: title }),
-                image: img
+                image: img,
             }));
         }
         return popularMangas;
