@@ -1,16 +1,18 @@
 import {
-	Source,
-	Manga,
 	Chapter,
 	ChapterDetails,
-	HomeSection,
 	ContentRating,
-	SearchRequest,
-	TagSection,
+	HomeSection,
+	HomeSectionType,
 	LanguageCode,
+	Manga,
+	MangaUpdates,
 	PagedResults,
+	SearchRequest,
+	Source,
 	SourceInfo,
-	TagType, MangaUpdates,
+	TagSection,
+	TagType,
 } from 'paperback-extensions-common';
 
 import {Parser} from './GoldenMangasParser';
@@ -175,11 +177,11 @@ export class GoldenMangas extends Source {
 
 	override async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
 		// Let the app know what the homsections are without filling in the data
-		let mostReadMangas = createHomeSection({id: 'mostReadMangas', title: 'Mangás mais lidos'});
+		let mostReadMangas = createHomeSection({id: 'mostReadMangas', title: 'Mangás mais lidos', type: HomeSectionType.featured});
 		sectionCallback(mostReadMangas);
-		let latestUpdates = createHomeSection({id: 'latestUpdates', title: 'Últimas Atualizações'});
+		let latestUpdates = createHomeSection({id: 'latestUpdates', title: 'Últimas Atualizações', view_more: true});
 		sectionCallback(latestUpdates);
-		let newReleases = createHomeSection({id: 'newReleases', title: 'Novos mangás'});
+		let newReleases = createHomeSection({id: 'newReleases', title: 'Novos mangás', type: HomeSectionType.singleRowLarge});
 		sectionCallback(newReleases);
 
 		let request = createRequestObject({
@@ -198,6 +200,32 @@ export class GoldenMangas extends Source {
 
 		newReleases.items = this.parser.parseHomePageNewReleases($);
 		sectionCallback(newReleases);
+	}
+
+	override async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults>{
+		let page: number = metadata?.page ?? 1;
+		let lastPage = metadata?.lastPage ?? false;
+
+		if(lastPage || page == -1 || homepageSectionId !== 'latestUpdates')
+			return createPagedResults({results: [], metadata: {page: -1}});
+
+		let request = createRequestObject({
+			url: `${GOLDENMANGAS_DOMAIN}/index.php?pagina=${page}`,
+			method: 'GET',
+		});
+		let response = await this.requestManager.schedule(request, 1);
+		let $ = this.cheerio.load(response.data || response['fixedData']);
+
+		const mangas = this.parser.parseHomePageLatestUpdates($);
+		lastPage = this.parser.parseIsLastPage($, page);
+
+        return createPagedResults({
+            results: mangas,
+            metadata: {
+				page: page +1,
+				lastPage: lastPage
+			}
+        });
 	}
 
 	override async getTags(): Promise<TagSection[]> {

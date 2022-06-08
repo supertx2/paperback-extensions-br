@@ -265,4 +265,13 @@ export class Parser {
 		})];
 	}
 
+	parseIsLastPage($: any, curPage: number): boolean {
+		const pages = $(".pagination li");
+		if(!pages.length)
+			return false;
+
+		const maxPages = Number(pages.eq(pages.length - 2).text().trim()) || 0;
+		return !maxPages || curPage >= maxPages;
+	}
+
 }

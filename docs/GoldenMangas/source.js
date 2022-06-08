@@ -2556,11 +2556,11 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
     getHomePageSections(sectionCallback) {
         return __awaiter(this, void 0, void 0, function* () {
             // Let the app know what the homsections are without filling in the data
-            let mostReadMangas = createHomeSection({ id: 'mostReadMangas', title: 'Mangás mais lidos' });
+            let mostReadMangas = createHomeSection({ id: 'mostReadMangas', title: 'Mangás mais lidos', type: paperback_extensions_common_1.HomeSectionType.featured });
             sectionCallback(mostReadMangas);
-            let latestUpdates = createHomeSection({ id: 'latestUpdates', title: 'Últimas Atualizações' });
+            let latestUpdates = createHomeSection({ id: 'latestUpdates', title: 'Últimas Atualizações', view_more: true });
             sectionCallback(latestUpdates);
-            let newReleases = createHomeSection({ id: 'newReleases', title: 'Novos mangás' });
+            let newReleases = createHomeSection({ id: 'newReleases', title: 'Novos mangás', type: paperback_extensions_common_1.HomeSectionType.singleRowLarge });
             sectionCallback(newReleases);
             let request = createRequestObject({
                 url: GOLDENMANGAS_DOMAIN,
@@ -2574,6 +2574,30 @@ class GoldenMangas extends paperback_extensions_common_1.Source {
             sectionCallback(latestUpdates);
             newReleases.items = this.parser.parseHomePageNewReleases($);
             sectionCallback(newReleases);
+        });
+    }
+    getViewMoreItems(homepageSectionId, metadata) {
+        var _a, _b;
+        return __awaiter(this, void 0, void 0, function* () {
+            let page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
+            let lastPage = (_b = metadata === null || metadata === void 0 ? void 0 : metadata.lastPage) !== null && _b !== void 0 ? _b : false;
+            if (lastPage || page == -1 || homepageSectionId !== 'latestUpdates')
+                return createPagedResults({ results: [], metadata: { page: -1 } });
+            let request = createRequestObject({
+                url: `${GOLDENMANGAS_DOMAIN}/index.php?pagina=${page}`,
+                method: 'GET',
+            });
+            let response = yield this.requestManager.schedule(request, 1);
+            let $ = this.cheerio.load(response.data || response['fixedData']);
+            const mangas = this.parser.parseHomePageLatestUpdates($);
+            lastPage = this.parser.parseIsLastPage($, page);
+            return createPagedResults({
+                results: mangas,
+                metadata: {
+                    page: page + 1,
+                    lastPage: lastPage
+                }
+            });
         });
     }
     getTags() {
@@ -2804,6 +2828,13 @@ class Parser {
                 label: 'Genero',
                 tags: genres,
             })];
+    }
+    parseIsLastPage($, curPage) {
+        const pages = $(".pagination li");
+        if (!pages.length)
+            return false;
+        const maxPages = Number(pages.eq(pages.length - 2).text().trim()) || 0;
+        return !maxPages || curPage >= maxPages;
     }
 }
 exports.Parser = Parser;
