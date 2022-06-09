@@ -156,6 +156,8 @@ export class Parser {
 		for (let obj of context.toArray()) {
 			const $obj = $(obj);
 			let id = $obj.find('a').first().attr('href')?.replace('/mangabr/', '');
+			if(!id)
+				continue;
 
 			const updateTimeSplied = $obj.find('.dataAtualizacao').text()?.trim()?.split('/').map((i: string) => Number(i));
 			let updateTime: Date;
