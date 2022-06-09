@@ -2799,6 +2799,8 @@ class Parser {
         for (let obj of context.toArray()) {
             const $obj = $(obj);
             let id = (_a = $obj.find('a').first().attr('href')) === null || _a === void 0 ? void 0 : _a.replace('/mangabr/', '');
+            if (!id)
+                continue;
             const updateTimeSplied = (_c = (_b = $obj.find('.dataAtualizacao').text()) === null || _b === void 0 ? void 0 : _b.trim()) === null || _c === void 0 ? void 0 : _c.split('/').map((i) => Number(i));
             let updateTime;
             if (!updateTimeSplied || updateTimeSplied.length !== 3)
