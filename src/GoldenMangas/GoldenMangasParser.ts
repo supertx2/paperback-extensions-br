@@ -10,7 +10,6 @@ import {
 	PagedResults,
 	Tag,
 } from 'paperback-extensions-common';
-import Element = cheerio.Element;
 
 const GOLDENMANGAS_DOMAIN = 'https://goldenmanga.top';
 
@@ -21,24 +20,26 @@ export class Parser {
 		const firstColumn = $('div.col-sm-4.text-right > img').first();
 		const secondColumn = $('div.col-sm-8').first();
 
-
 		const titles = [secondColumn.find('h2').eq(0).text().trim()];
 		const image = firstColumn.attr('src');
 		const status = secondColumn.find('h5:contains(Status) a').text() == 'Completo' ? MangaStatus.COMPLETED : MangaStatus.ONGOING;
-		const author = secondColumn.find('h5:contains(Autor)')!!.text();
-		const artist = secondColumn.find('h5:contains(Artista)')!!.text();
+		const author = secondColumn.find('h5:contains(Autor)').text();
+		const artist = secondColumn.find('h5:contains(Artista)').text();
 		const rating = Number(secondColumn.find('h2').eq(1).text().replace('#', '').split(' ')[0]);
 
 		let genres: Tag[] = [];
-		secondColumn.find('h5').first().find('a').filter((_: Number, e: Element) => !!$(e).text()).toArray().map((e: Element) => {
-			const idString = $(e).attr('href').replace('..', '').replace('/mangabr?genero=', '');
-			if (!idString)
-				return;
+		for (const genreTag of secondColumn.find('h5').first().find('a').toArray()) {
+			const genre = $(genreTag).text().trim();
+			const idString = /genero=(.*)/gi.exec($(genreTag).attr('href'))?.[1];
+
+			if (!idString || !genre)
+				continue;
+
 			genres.push({
 				id: idString
-				, label: $(e).text().trim(),
+				, label: genre,
 			});
-		});
+		}
 
 		let tags: TagSection[] = [createTagSection({id: '0', label: 'genres', tags: genres.map(g => createTag(g))})];
 
@@ -48,11 +49,11 @@ export class Parser {
 			id: mangaId,
 			rating: rating,
 			titles: titles,
-			image: `${GOLDENMANGAS_DOMAIN}${image!}`,
+			image: !!image ? `${GOLDENMANGAS_DOMAIN}${image}` : "https://i.imgur.com/GYUxEX8.png",
 			author: author,
 			artist: artist,
 			status: Number(status),
-			tags: tags, //It's making the app to crash
+			tags: tags,
 			desc: summary,
 		});
 	}
@@ -122,18 +123,21 @@ export class Parser {
 			const title = $manga.find('h3').text();
 			const id = $manga.attr('href')?.replace('/mangabr/', '');
 			const image = $manga.find('img').attr('src');
+
+			if(!title || !id)
+				continue;
+
 			mangaTiles.push(createMangaTile({
 				id: id!,
 				title: createIconText({text: title}),
-				image: `${GOLDENMANGAS_DOMAIN}${image!}`,
+				image: !!image ? `${GOLDENMANGAS_DOMAIN}${image}` : 'https://i.imgur.com/GYUxEX8.png'
 			}));
 
 		}
 
 		const pages = $('.pagination li');
 		const totalPages = Number(pages.eq(pages.length - 2).text().trim() || 1);
-		//console.log("[Debug] Total Pages: " + totalPages);
-		// Because we're reading JSON, there will never be another page to search through
+
 		return createPagedResults({
 			results: mangaTiles,
 			metadata: {
@@ -178,18 +182,18 @@ export class Parser {
 		let context = $('div#maisLidos div.itemmanga');
 		for (let obj of context.toArray()) {
 			const $obj = $(obj);
-			let img = `${GOLDENMANGAS_DOMAIN}${$('img', $(obj)).attr('src')}`;
+			let img = $('img', $(obj)).attr('src');
 			let id = $obj.attr('href')?.replace('/mangabr/', '');
 			let title = $obj.find('h3').text().trim();
 
-			if (!id) {
+			if (!id || !title) {
 				continue;
 			}
 
 			popularMangas.push(createMangaTile({
 				id: id,
 				title: createIconText({text: title}),
-				image: img,
+				image: !!img ? `${GOLDENMANGAS_DOMAIN}${img}` : 'https://i.imgur.com/GYUxEX8.png'
 			}));
 		}
 
@@ -202,18 +206,18 @@ export class Parser {
 		let context = $('#response .atualizacao');
 		for (let obj of context.toArray()) {
 			const $obj = $(obj);
-			let img = `${GOLDENMANGAS_DOMAIN}${$('img', $(obj)).attr('src')}`;
+			let img = $('img', $(obj)).attr('src');
 			let id = $obj.find('a').first().attr('href')?.replace('/mangabr/', '');
 			let title = $obj.find('h3').text().trim();
 
-			if (!id) {
+			if (!id || !title) {
 				continue;
 			}
 
 			popularMangas.push(createMangaTile({
 				id: id,
 				title: createIconText({text: title}),
-				image: img,
+				image: !!img ? `${GOLDENMANGAS_DOMAIN}${img}` : 'https://i.imgur.com/GYUxEX8.png',
 			}));
 		}
 
@@ -226,19 +230,20 @@ export class Parser {
 		let context = $('.manga-novo .row');
 		for (let obj of context.toArray()) {
 			const $obj = $(obj);
-			let img = `${GOLDENMANGAS_DOMAIN}${$('img', $(obj)).attr('src')}`;
+			let img = $('img', $(obj)).attr('src');
 			let id = $obj.find('a').first().attr('href')?.replace('/mangabr/', '');
 			let title = $obj.find('h2').text().trim();
 			let synopsis = $obj.find('span').text().trim();
-			if (!id) {
+
+			if (!id || !title) {
 				continue;
 			}
 
 			popularMangas.push(createMangaTile({
 				id: id,
-				primaryText: createIconText({text: synopsis}),//Todo: Check the best place to put the synopsis
+				primaryText: createIconText({text: synopsis}),
 				title: createIconText({text: title}),
-				image: img,
+				image: !!img ? `${GOLDENMANGAS_DOMAIN}${img}` : 'https://i.imgur.com/GYUxEX8.png',
 			}));
 		}
 
@@ -252,9 +257,13 @@ export class Parser {
 			const $obj = $(obj);
 
 			const id = $obj.attr('href').replace('/mangabr?genero=,', '');
+			const tagName = $obj.text().trim();
+			if(!id || !tagName)
+				continue;
+
 			genres.push(createTag({
 				id: id,
-				label: $(obj).text().trim(),
+				label: tagName,
 			}));
 		}
 

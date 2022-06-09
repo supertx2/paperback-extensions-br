@@ -36,7 +36,7 @@ export const GoldenMangasInfo: SourceInfo = {
 			type: TagType.GREEN,
 		},
 		{
-			text: LanguageCode.PORTUGUESE,
+			text: "Portuguese",
 			type: TagType.GREY,
 		},
 		{
@@ -49,7 +49,7 @@ export const GoldenMangasInfo: SourceInfo = {
 export class GoldenMangas extends Source {
 	private readonly parser: Parser = new Parser();
 	readonly headers = {
-		'referer': `https://google.com/`,
+		'referer': GOLDENMANGAS_DOMAIN,
 		'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.60 Safari/537.36',
 		'accept-language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5',
 		'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
@@ -57,7 +57,7 @@ export class GoldenMangas extends Source {
 	};
 	readonly requestManager = createRequestManager({
 		requestsPerSecond: 3,
-		requestTimeout: 100000,
+		requestTimeout: 15000,
 		interceptor: {
 			interceptRequest: async (request) => {
 				request.headers = this.headers;

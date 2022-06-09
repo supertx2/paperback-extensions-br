@@ -38,7 +38,7 @@ export class Parser {
 			rating: 1,//unknown
 			views: 1,
 			titles: titles,
-			image: `${image!}`,
+			image: !!image ? image : 'https://i.imgur.com/GYUxEX8.png',
 			author: author,
 			artist: artist,
 			status: Number(status),
@@ -102,10 +102,14 @@ export class Parser {
 			const title = $titleA.text();
 			const id = $titleA.attr('href')?.replace(`${BASE_DOMAIN}/projeto/`, '').replace('/', '');
 			const image = $manga.find('.container_imagem').css('background-image').slice(4, -1).replace(/"/g, '');
+
+			if(!id || !title)
+				continue;
+
 			mangaTiles.push(createMangaTile({
-				id: id!,
+				id: id,
 				title: createIconText({text: title}),
-				image: `${image!}`,
+				image: !!image ? image : 'https://i.imgur.com/GYUxEX8.png',
 			}));
 
 		}
@@ -129,8 +133,7 @@ export class Parser {
 				return letter.toUpperCase();
 			});
 
-			// If there was not a valid ID parsed, skip this entry
-			if (!id) {
+			if (!id || !title) {
 				continue;
 			}
 
@@ -149,7 +152,7 @@ export class Parser {
 			popularMangas.push(createMangaTile({
 				id: id,
 				title: createIconText({text: title}),
-				image: img,
+				image: !!img ? img : 'https://i.imgur.com/GYUxEX8.png',
 			}));
 		}
 

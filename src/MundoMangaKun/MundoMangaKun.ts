@@ -15,7 +15,7 @@ import {
 import {Parser} from './MundoMangaKunParser';
 
 const BASE_DOMAIN = 'https://mundomangakun.com.br';
-const method = 'GET';
+
 export const MundoMangaKunInfo: SourceInfo = {
 	version: '0.1',
 	name: 'Mundo Mangá-kun',
@@ -28,8 +28,12 @@ export const MundoMangaKunInfo: SourceInfo = {
 	language: LanguageCode.PORTUGUESE,
 	sourceTags: [
 		{
-			text: LanguageCode.PORTUGUESE,
+			text: "Portuguese",
 			type: TagType.GREY,
+		},
+		{
+			text: 'Cloudflare',
+			type: TagType.RED,
 		},
 	],
 };
@@ -39,7 +43,7 @@ export class MundoMangaKun extends Source {
 
 	requestManager = createRequestManager({
 		requestsPerSecond: 3,
-		requestTimeout: 100000,
+		requestTimeout: 15000,
 		interceptor: {
 			interceptRequest: async (request) => {
 				request.headers = this.constructHeaders(request.url);
@@ -49,12 +53,6 @@ export class MundoMangaKun extends Source {
 		},
 	});
 
-	cloudflareBypassRequest() {
-		return createRequestObject({
-			url: `${BASE_DOMAIN}`,
-			method,
-		});
-	}
 
 	async getMangaDetails(mangaId: string): Promise<Manga> {
 
@@ -139,7 +137,8 @@ export class MundoMangaKun extends Source {
 
 	override getCloudflareBypassRequest() {
 		return createRequestObject({
-			url: 'https://mundomangakun.com.br/projeto/gleipnir/',
+			url: BASE_DOMAIN,
+			headers: this.constructHeaders(BASE_DOMAIN),
 			method: 'GET',
 		});
 	}

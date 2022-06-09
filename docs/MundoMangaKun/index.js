@@ -2981,7 +2981,6 @@ exports.MundoMangaKun = exports.MundoMangaKunInfo = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 const MundoMangaKunParser_1 = require("./MundoMangaKunParser");
 const BASE_DOMAIN = 'https://mundomangakun.com.br';
-const method = 'GET';
 exports.MundoMangaKunInfo = {
     version: '0.1',
     name: 'Mundo Mangá-kun',
@@ -2994,8 +2993,12 @@ exports.MundoMangaKunInfo = {
     language: paperback_extensions_common_1.LanguageCode.PORTUGUESE,
     sourceTags: [
         {
-            text: paperback_extensions_common_1.LanguageCode.PORTUGUESE,
+            text: "Portuguese",
             type: paperback_extensions_common_1.TagType.GREY,
+        },
+        {
+            text: 'Cloudflare',
+            type: paperback_extensions_common_1.TagType.RED,
         },
     ],
 };
@@ -3005,7 +3008,7 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
         this.parser = new MundoMangaKunParser_1.Parser();
         this.requestManager = createRequestManager({
             requestsPerSecond: 3,
-            requestTimeout: 100000,
+            requestTimeout: 15000,
             interceptor: {
                 interceptRequest: (request) => __awaiter(this, void 0, void 0, function* () {
                     request.headers = this.constructHeaders(request.url);
@@ -3013,12 +3016,6 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
                 }),
                 interceptResponse: (response) => __awaiter(this, void 0, void 0, function* () { return response; }),
             },
-        });
-    }
-    cloudflareBypassRequest() {
-        return createRequestObject({
-            url: `${BASE_DOMAIN}`,
-            method,
         });
     }
     getMangaDetails(mangaId) {
@@ -3091,7 +3088,8 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
     }
     getCloudflareBypassRequest() {
         return createRequestObject({
-            url: 'https://mundomangakun.com.br/projeto/gleipnir/',
+            url: BASE_DOMAIN,
+            headers: this.constructHeaders(BASE_DOMAIN),
             method: 'GET',
         });
     }
@@ -3138,7 +3136,7 @@ class Parser {
             rating: 1,
             views: 1,
             titles: titles,
-            image: `${image}`,
+            image: !!image ? image : 'https://i.imgur.com/GYUxEX8.png',
             author: author,
             artist: artist,
             status: Number(status),
@@ -3190,10 +3188,12 @@ class Parser {
             const title = $titleA.text();
             const id = (_a = $titleA.attr('href')) === null || _a === void 0 ? void 0 : _a.replace(`${BASE_DOMAIN}/projeto/`, '').replace('/', '');
             const image = $manga.find('.container_imagem').css('background-image').slice(4, -1).replace(/"/g, '');
+            if (!id || !title)
+                continue;
             mangaTiles.push(createMangaTile({
                 id: id,
                 title: createIconText({ text: title }),
-                image: `${image}`,
+                image: !!image ? image : 'https://i.imgur.com/GYUxEX8.png',
             }));
         }
         return createPagedResults({
@@ -3211,8 +3211,7 @@ class Parser {
             const title = id.replaceAll('-', ' ').toLowerCase().replace(/\b[a-z]/g, function (letter) {
                 return letter.toUpperCase();
             });
-            // If there was not a valid ID parsed, skip this entry
-            if (!id) {
+            if (!id || !title) {
                 continue;
             }
             let foundItem = false;
@@ -3228,7 +3227,7 @@ class Parser {
             popularMangas.push(createMangaTile({
                 id: id,
                 title: createIconText({ text: title }),
-                image: img,
+                image: !!img ? img : 'https://i.imgur.com/GYUxEX8.png',
             }));
         }
         return popularMangas;
