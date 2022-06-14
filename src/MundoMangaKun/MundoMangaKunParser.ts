@@ -1,161 +1,169 @@
 import {
-	Manga,
-	MangaStatus,
-	Chapter,
-	ChapterDetails,
-	MangaTile,
-	LanguageCode,
-	PagedResults,
-	Tag,
-} from 'paperback-extensions-common';
+    Manga,
+    MangaStatus,
+    Chapter,
+    ChapterDetails,
+    MangaTile,
+    LanguageCode,
+    PagedResults,
+    Tag,
+} from 'paperback-extensions-common'
 
-const BASE_DOMAIN = 'https://mundomangakun.com.br';
+const BASE_DOMAIN = 'https://mundomangakun.com.br'
 
 export class Parser {
 
-	parseMangaDetails($: any, mangaId: string): Manga {
+    parseMangaDetails($: any, mangaId: string): Manga {
 
-		const $infoElement = $('.main_container_projeto .container-fluid');
-		const $infoText = $infoElement.find('.tabela_info_projeto tr');
-		const titles = [$infoElement.find('.titulo_projeto').first().text().trim()];
-		const image = $infoElement.find('.imagens_projeto_container img').attr('src');
-		const status = $infoText.eq(5).find('td').eq(1).text() == 'Em Andamento' ? MangaStatus.ONGOING : MangaStatus.COMPLETED;
-		const author = $infoElement.find('.tabela_info_projeto tr').eq(1).find('td').eq(1).text();
-		const artist = $infoElement.find('.tabela_info_projeto tr').eq(0).find('td').eq(1).text();
+        const $infoElement = $('.main_container_projeto .container-fluid')
+        const $infoText = $infoElement.find('.tabela_info_projeto tr')
+        const titles = [$infoElement.find('.titulo_projeto').first().text().trim()]
+        const image = $infoElement.find('.imagens_projeto_container img').attr('src')
+        const status = $infoText.eq(5).find('td').eq(1).text() == 'Em Andamento' ? MangaStatus.ONGOING : MangaStatus.COMPLETED
+        const author = $infoElement.find('.tabela_info_projeto tr').eq(1).find('td').eq(1).text()
+        const artist = $infoElement.find('.tabela_info_projeto tr').eq(0).find('td').eq(1).text()
 
-		const genres: Tag[] = [];
-		$infoElement.find('.generos a').filter((_: number, e: Element) => !!$(e).text()).toArray().map((e: Element) => genres.push({
-			id: $(e).attr('href')?.replace(`${mangaId}/generos/`, '').replace('/', '/')!
-			, label: $(e).text().trim(),
-		}));
+        const genres: Tag[] = []
+        $infoElement.find('.generos a').filter((_: number, e: Element) => !!$(e).text()).toArray().map((e: Element) => { 
+            const id = $(e).attr('href')?.replace(`${mangaId}/generos/`, '').replace('/', '/')
+                , details = $(e).text().trim()
+				
+            if(!id || !details)
+                return
 
-		//let tags: TagSection[] = [createTagSection({id: 'genres', label: 'genres', tags: genres})];
+            genres.push({
+                id: id
+                , label: details
+            })
+        })
 
-		let summary = $infoElement.find('.conteudo_projeto').text().trim();
+        //let tags: TagSection[] = [createTagSection({id: 'genres', label: 'genres', tags: genres})];
 
-		return createManga({
-			id: mangaId,
-			rating: 1,//unknown
-			views: 1,
-			titles: titles,
-			image: !!image ? image : 'https://i.imgur.com/GYUxEX8.png',
-			author: author,
-			artist: artist,
-			status: Number(status),
-			// tags: tags,
-			desc: summary,
-		});
-	}
+        const summary = $infoElement.find('.conteudo_projeto').text().trim()
 
-	parseChapters($: any, mangaId: string): Chapter[] {
+        return createManga({
+            id: mangaId,
+            rating: 1,//unknown
+            views: 1,
+            titles: titles,
+            image: image ? image : 'https://i.imgur.com/GYUxEX8.png',
+            author: author,
+            artist: artist,
+            status: Number(status),
+            // tags: tags,
+            desc: summary,
+        })
+    }
 
-		let chapters: Chapter[] = [];
+    parseChapters($: any, mangaId: string): Chapter[] {
 
-		for (let obj of $('.capitulos_leitor_online a').toArray()) {
-			const $obj = $(obj);
+        const chapters: Chapter[] = []
 
-			const name = $obj.text();
+        for (const obj of $('.capitulos_leitor_online a').toArray()) {
+            const $obj = $(obj)
 
-			const clickEvent = $obj.attr('onclick');
-			const id = clickEvent?.substring(clickEvent.indexOf(mangaId), clickEvent.indexOf(`','tipo'`)).replaceAll('\\', '').replace(`${mangaId}/`, '').split('/')[0];
-			let chapNum = Number(name.replace(/\D/g, '')) || 0;
+            const name = $obj.text()
 
-			// If we parsed a bad ID out, don't include this in our list
-			if (!id) {
-				continue;
-			}
+            const clickEvent = $obj.attr('onclick')
+            const id = clickEvent?.substring(clickEvent.indexOf(mangaId), clickEvent.indexOf('\',\'tipo\'')).replaceAll('\\', '').replace(`${mangaId}/`, '').split('/')[0]
+            const chapNum = Number(name.replace(/\D/g, '')) || 0
 
-			chapters.push(createChapter({
-				id: id,
-				mangaId: mangaId,
-				chapNum: chapNum,
-				langCode: LanguageCode.BRAZILIAN,
-				name: name,
-			}));
-		}
+            // If we parsed a bad ID out, don't include this in our list
+            if (!id) {
+                continue
+            }
 
-		return chapters;
-	}
+            chapters.push(createChapter({
+                id: id,
+                mangaId: mangaId,
+                chapNum: chapNum,
+                langCode: LanguageCode.BRAZILIAN,
+                name: name,
+            }))
+        }
 
-	parseChapterDetails(data: any, mangaId: string, chapterId: string): ChapterDetails {
+        return chapters
+    }
 
-		let pagesString = data.data;
-		const pagesStartIndex = pagesString.indexOf('var paginas = ');
-		pagesString = pagesString.substring(pagesStartIndex, pagesString.length - 1);
-		pagesString = pagesString.substring(0, pagesString.indexOf(']') + 1).replace('var paginas = ', '');
-		const pagesObject = JSON.parse(pagesString);
+    parseChapterDetails(data: any, mangaId: string, chapterId: string): ChapterDetails {
 
-		return createChapterDetails({
-			id: chapterId,
-			mangaId: mangaId,
-			pages: pagesObject,
-			longStrip: false,
-		});
-	}
+        let pagesString = data.data
+        const pagesStartIndex = pagesString.indexOf('var paginas = ')
+        pagesString = pagesString.substring(pagesStartIndex, pagesString.length - 1)
+        pagesString = pagesString.substring(0, pagesString.indexOf(']') + 1).replace('var paginas = ', '')
+        const pagesObject = JSON.parse(pagesString)
 
-	parseSearchResults($: any): PagedResults {
-		let mangaTiles: MangaTile[] = [];
+        return createChapterDetails({
+            id: chapterId,
+            mangaId: mangaId,
+            pages: pagesObject,
+            longStrip: false,
+        })
+    }
 
-		for (let manga of $('.leitor_online_container article').toArray()) {
-			const $manga = $(manga);
-			const $titleA = $manga.find('.titulo_manga_item a');
-			const title = $titleA.text();
-			const id = $titleA.attr('href')?.replace(`${BASE_DOMAIN}/projeto/`, '').replace('/', '');
-			const image = $manga.find('.container_imagem').css('background-image').slice(4, -1).replace(/"/g, '');
+    parseSearchResults($: any): PagedResults {
+        const mangaTiles: MangaTile[] = []
 
-			if(!id || !title)
-				continue;
+        for (const manga of $('.leitor_online_container article').toArray()) {
+            const $manga = $(manga)
+            const $titleA = $manga.find('.titulo_manga_item a')
+            const title = $titleA.text()
+            const id = $titleA.attr('href')?.replace(`${BASE_DOMAIN}/projeto/`, '').replace('/', '')
+            const image = $manga.find('.container_imagem').css('background-image').slice(4, -1).replace(/"/g, '')
 
-			mangaTiles.push(createMangaTile({
-				id: id,
-				title: createIconText({text: title}),
-				image: !!image ? image : 'https://i.imgur.com/GYUxEX8.png',
-			}));
+            if(!id || !title)
+                continue
 
-		}
+            mangaTiles.push(createMangaTile({
+                id: id,
+                title: createIconText({text: title}),
+                image: image ? image : 'https://i.imgur.com/GYUxEX8.png',
+            }))
 
-		return createPagedResults({
-			results: mangaTiles,
-		});
+        }
 
-	}
+        return createPagedResults({
+            results: mangaTiles,
+        })
 
-	parseHomePageSections($: any): MangaTile[] {
-		let popularMangas: MangaTile[] = [];
+    }
 
-		const context = $('.lancamentos_main_container .container-obras-populares article');
-		for (let obj of context.toArray()) {
-			const $obj = $(obj);
-			let img = $obj.find('.container_imagem').css('background-image').slice(4, -1).replace(/"/g, '');
-			const titleLink = $('a', $(obj)).attr('href')!;
-			let id = titleLink.replace('https://mundomangakun.com.br/projeto/', '').replace('/', '');
-			const title = id.replaceAll('-', ' ').toLowerCase().replace(/\b[a-z]/g, function (letter: string) {
-				return letter.toUpperCase();
-			});
+    parseHomePageSections($: any): MangaTile[] {
+        const popularMangas: MangaTile[] = []
 
-			if (!id || !title) {
-				continue;
-			}
+        const context = $('.lancamentos_main_container .container-obras-populares article')
+        for (const obj of context.toArray()) {
+            const $obj = $(obj)
+            const img = $obj.find('.container_imagem').css('background-image').slice(4, -1).replace(/"/g, '')
+            const titleLink = $('a', $(obj)).attr('href')!
+            const id = titleLink.replace('https://mundomangakun.com.br/projeto/', '').replace('/', '')
+            const title = id.replaceAll('-', ' ').toLowerCase().replace(/\b[a-z]/g, (letter: string) => {
+                return letter.toUpperCase()
+            })
 
-			let foundItem = false;
-			for (let item of popularMangas) {
-				if (item.id == id) {
-					foundItem = true;
-					break;
-				}
-			}
+            if (!id || !title) {
+                continue
+            }
 
-			if (foundItem) {
-				continue;
-			}
+            let foundItem = false
+            for (const item of popularMangas) {
+                if (item.id == id) {
+                    foundItem = true
+                    break
+                }
+            }
 
-			popularMangas.push(createMangaTile({
-				id: id,
-				title: createIconText({text: title}),
-				image: !!img ? img : 'https://i.imgur.com/GYUxEX8.png',
-			}));
-		}
+            if (foundItem) {
+                continue
+            }
 
-		return popularMangas;
-	}
+            popularMangas.push(createMangaTile({
+                id: id,
+                title: createIconText({text: title}),
+                image: img ? img : 'https://i.imgur.com/GYUxEX8.png',
+            }))
+        }
+
+        return popularMangas
+    }
 }
