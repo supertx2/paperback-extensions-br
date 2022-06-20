@@ -1137,7 +1137,7 @@ class Parser {
             const name = $obj.text();
             const clickEvent = $obj.attr('onclick');
             const id = clickEvent === null || clickEvent === void 0 ? void 0 : clickEvent.substring(clickEvent.indexOf(mangaId), clickEvent.indexOf('\',\'tipo\'')).replaceAll('\\', '').replace(`${mangaId}/`, '').split('/')[0];
-            const chapNum = Number(name.replace(/\D/g, '')) || 0;
+            const chapNum = Number(name.replace(/\D/g, ''));
             // If we parsed a bad ID out, don't include this in our list
             if (!id) {
                 continue;
@@ -1145,7 +1145,7 @@ class Parser {
             chapters.push(createChapter({
                 id: id,
                 mangaId: mangaId,
-                chapNum: chapNum,
+                chapNum: isNaN(chapNum) ? chapNum : 0,
                 langCode: paperback_extensions_common_1.LanguageCode.BRAZILIAN,
                 name: this.decodeHTMLEntity(name),
             }));

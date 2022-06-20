@@ -74,7 +74,7 @@ export class Parser {
             const time = new Date(splitedDate[2], splitedDate[1] - 1, splitedDate[0])
 
             const id = $('a', $(obj)).attr('href')?.replace(`/mangabr/${mangaId}/`, '')
-            const chapNum = Number(id) || 0
+            const chapNum = Number(id)
 
             // If we parsed a bad ID out, don't include this in our list
             if (!id) {
@@ -84,7 +84,7 @@ export class Parser {
             chapters.push(createChapter({
                 id: id,
                 mangaId: mangaId,
-                chapNum: chapNum,
+                chapNum: isNaN(chapNum) ? chapNum : 0,
                 langCode: LanguageCode.BRAZILIAN,
                 name: this.decodeHTMLEntity(name),
                 time: time,

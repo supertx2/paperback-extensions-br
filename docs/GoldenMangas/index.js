@@ -3892,7 +3892,7 @@ class Parser {
             const splitedDate = firstColumn.find('span[style]').text().replace('(', '').replace(')', '').trim().split('/').map((i) => Number(i));
             const time = new Date(splitedDate[2], splitedDate[1] - 1, splitedDate[0]);
             const id = (_a = $('a', $(obj)).attr('href')) === null || _a === void 0 ? void 0 : _a.replace(`/mangabr/${mangaId}/`, '');
-            const chapNum = Number(id) || 0;
+            const chapNum = Number(id);
             // If we parsed a bad ID out, don't include this in our list
             if (!id) {
                 continue;
@@ -3900,7 +3900,7 @@ class Parser {
             chapters.push(createChapter({
                 id: id,
                 mangaId: mangaId,
-                chapNum: chapNum,
+                chapNum: isNaN(chapNum) ? chapNum : 0,
                 langCode: paperback_extensions_common_1.LanguageCode.BRAZILIAN,
                 name: this.decodeHTMLEntity(name),
                 time: time,
