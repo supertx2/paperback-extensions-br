@@ -11,12 +11,13 @@ import {
     Tag,
 } from 'paperback-extensions-common'
 import entities = require('entities')
+import CheerioAPI = cheerio.CheerioAPI;
 
 const GOLDENMANGAS_DOMAIN = 'https://goldenmanga.top'
 
 export class Parser {
 
-    parseMangaDetails($: any, mangaId: string): Manga {
+    parseMangaDetails($: CheerioAPI, mangaId: string): Manga {
 
         const firstColumn = $('div.col-sm-4.text-right > img').first()
         const secondColumn = $('div.col-sm-8').first()
@@ -31,7 +32,11 @@ export class Parser {
         const genres: Tag[] = []
         for (const genreTag of secondColumn.find('h5').first().find('a').toArray()) {
             const genre = $(genreTag).text().trim()
-            const idString = /genero=(.*)/gi.exec($(genreTag).attr('href'))?.[1]
+            const genreRef = $(genreTag).attr('href')
+            if(!genreRef) {
+                continue
+            }
+            const idString = /genero=(.*)/gi.exec(genreRef)?.[1]
 
             if (!idString || !genre) {
                 continue
@@ -60,7 +65,7 @@ export class Parser {
         })
     }
 
-    parseChapters($: any, mangaId: string): Chapter[] {
+    parseChapters($: CheerioAPI, mangaId: string): Chapter[] {
         const chapters: Chapter[] = []
 
         for (const obj of $('ul#capitulos li.row').toArray()) {
@@ -71,7 +76,12 @@ export class Parser {
             const name = rawName.substring(0, rawName.indexOf('(')).trim()
             const splitedDate = firstColumn.find('span[style]').text().replace('(', '').replace(')', '').trim().split('/').map((i: string) => Number(i))
 
-            const time = new Date(splitedDate[2], splitedDate[1] - 1, splitedDate[0])
+            let time
+            if(splitedDate[2] && splitedDate[1] && splitedDate[0]) {
+                time = new Date(splitedDate[2], splitedDate[1] - 1, splitedDate[0])
+            } else {
+                time = new Date()
+            }
 
             const id = $('a', $(obj)).attr('href')?.replace(`/mangabr/${mangaId}/`, '')
             const chapNum = Number(id)
@@ -94,7 +104,7 @@ export class Parser {
         return chapters
     }
 
-    parseChapterDetails($: any, mangaId: string, chapterId: string): ChapterDetails {
+    parseChapterDetails($: CheerioAPI, mangaId: string, chapterId: string): ChapterDetails {
         const pages: string[] = []
 
         // Get all of the pages
@@ -113,7 +123,7 @@ export class Parser {
         })
     }
 
-    parseSearchResults($: any, _query: SearchRequest, metadata: any): PagedResults {
+    parseSearchResults($: CheerioAPI, _query: SearchRequest, metadata: {page: number, totalPages: number}): PagedResults {
 
         const page = metadata?.page ?? 1
         const mangaTiles: MangaTile[] = []
@@ -150,7 +160,7 @@ export class Parser {
 
     }
 
-    parseUpdatedMangaGetIds($: any, time: Date, ids: string[]): {foundIds:string[], loadNextPage: boolean} {
+    parseUpdatedMangaGetIds($: CheerioAPI, time: Date, ids: string[]): {foundIds:string[], loadNextPage: boolean} {
 
         const foundIds: string[] = []
         let loadNextPage = true
@@ -168,6 +178,9 @@ export class Parser {
                 continue
             }
 
+            if(!updateTimeSplied[2] || !updateTimeSplied[1] || !updateTimeSplied[0]) {
+                continue
+            }
             const updateTime = new Date(updateTimeSplied[2], updateTimeSplied[1] - 1, updateTimeSplied[0])
 
             if (updateTime >= time && ids.includes(id)) {
@@ -181,7 +194,7 @@ export class Parser {
         return {foundIds: foundIds, loadNextPage: loadNextPage}
     }
 
-    parseHomePageMostReadMangas = ($: any): MangaTile[] => {
+    parseHomePageMostReadMangas = ($: CheerioAPI): MangaTile[] => {
         const popularMangas: MangaTile[] = []
 
         const context = $('div#maisLidos div.itemmanga')
@@ -206,7 +219,7 @@ export class Parser {
         return popularMangas
     };
 
-    parseHomePageLatestUpdates = ($: any): MangaTile[] => {
+    parseHomePageLatestUpdates = ($: CheerioAPI): MangaTile[] => {
         const popularMangas: MangaTile[] = []
 
         const context = $('#response .atualizacao')
@@ -220,7 +233,7 @@ export class Parser {
                 continue
             }
 
-            let chapters =  $obj.find('.label-success').toArray().map((l: Element ) => $(l).text()) || []
+            let chapters =  $obj.find('.label-success').toArray().map((l) => $(l).text()) || []
 
             if(chapters.length > 5) {
                 chapters = chapters.slice(0, 5)
@@ -238,7 +251,7 @@ export class Parser {
         return popularMangas
     };
 
-    parseHomePageNewReleases = ($: any): MangaTile[] => {
+    parseHomePageNewReleases = ($: CheerioAPI): MangaTile[] => {
         const popularMangas: MangaTile[] = []
 
         const context = $('.manga-novo .row')
@@ -253,7 +266,7 @@ export class Parser {
                 continue
             }
 
-            let tags =  $obj.parent()?.find('.label-warning').toArray().map((l: Element ) => $(l).text()) || []
+            let tags =  $obj.parent()?.find('.label-warning').toArray().map((l) => $(l).text()) || []
 
             if(tags.length > 5) {
                 tags = tags.slice(0, 5)
@@ -272,13 +285,13 @@ export class Parser {
         return popularMangas
     };
 
-    parseTags($: any): TagSection[] {
+    parseTags($: CheerioAPI): TagSection[] {
 
         const genres: Tag[] = []
         for (const obj of $('.container').eq(4).find('a.btn-warning').toArray()) {
             const $obj = $(obj)
 
-            const id = $obj.attr('href').replace('/mangabr?genero=,', '')
+            const id = $obj.attr('href')?.replace('/mangabr?genero=,', '')
             const tagName = $obj.text().trim()
             if(!id || !tagName) {
                 continue
@@ -297,7 +310,7 @@ export class Parser {
         })]
     }
 
-    parseIsLastPage($: any, curPage: number): boolean {
+    parseIsLastPage($: CheerioAPI, curPage: number): boolean {
         const pages = $('.pagination li')
         if(!pages.length) {
             return false

@@ -118,7 +118,7 @@ export class GoldenMangas extends Source {
         return this.parser.parseChapterDetails($, mangaId, chapterId)
     }
 
-    async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
+    async getSearchResults(query: SearchRequest, metadata: {page: number, totalPages: number}): Promise<PagedResults> {
 
         const page = metadata?.page ?? 1
         if (page == -1) {
@@ -207,7 +207,7 @@ export class GoldenMangas extends Source {
         sectionCallback(newReleases)
     }
 
-    override async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults>{
+    override async getViewMoreItems(homepageSectionId: string, metadata: {page: number, lastPage: boolean}): Promise<PagedResults>{
         const page: number = metadata?.page ?? 1
         let lastPage = metadata?.lastPage ?? false
 

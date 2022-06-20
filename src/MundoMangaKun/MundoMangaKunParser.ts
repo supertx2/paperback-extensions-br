@@ -6,14 +6,16 @@ import {
     MangaTile,
     LanguageCode,
     PagedResults,
+    Response
 } from 'paperback-extensions-common'
 import entities = require('entities')
+import CheerioAPI = cheerio.CheerioAPI;
 
 const BASE_DOMAIN = 'https://mundomangakun.com.br'
 
 export class Parser {
 
-    parseMangaDetails($: any, mangaId: string): Manga {
+    parseMangaDetails($: CheerioAPI, mangaId: string): Manga {
 
         const $infoElement = $('.main_container_projeto .container-fluid')
         const $infoText = $infoElement.find('.tabela_info_projeto tr')
@@ -24,10 +26,10 @@ export class Parser {
         const artist = $infoElement.find('.tabela_info_projeto tr').eq(0).find('td').eq(1).text()
 
         // const genres: Tag[] = []
-        // $infoElement.find('.generos a').filter((_: number, e: Element) => !!$(e).text()).toArray().map((e: Element) => { 
+        // $infoElement.find('.generos a').filter((_: number, e: Element) => !!$(e).text()).toArray().map((e: Element) => {
         //     const id = $(e).attr('href')?.replace(`${mangaId}/generos/`, '').replace('/', '/')
         //         , details = $(e).text().trim()
-				
+
         //     if(!id || !details) {
         //         return
         //     }
@@ -55,7 +57,7 @@ export class Parser {
         })
     }
 
-    parseChapters($: any, mangaId: string): Chapter[] {
+    parseChapters($: CheerioAPI, mangaId: string): Chapter[] {
 
         const chapters: Chapter[] = []
 
@@ -85,7 +87,7 @@ export class Parser {
         return chapters
     }
 
-    parseChapterDetails(data: any, mangaId: string, chapterId: string): ChapterDetails {
+    parseChapterDetails(data: Response, mangaId: string, chapterId: string): ChapterDetails {
 
         let pagesString = data.data
         const pagesStartIndex = pagesString.indexOf('var paginas = ')
@@ -107,7 +109,7 @@ export class Parser {
         })
     }
 
-    parseSearchResults($: any): PagedResults {
+    parseSearchResults($: CheerioAPI): PagedResults {
         const mangaTiles: MangaTile[] = []
 
         for (const manga of $('.leitor_online_container article').toArray()) {
@@ -135,7 +137,7 @@ export class Parser {
 
     }
 
-    parseHomePageSections($: any): MangaTile[] {
+    parseHomePageSections($: CheerioAPI): MangaTile[] {
         const popularMangas: MangaTile[] = []
 
         const context = $('.lancamentos_main_container .container-obras-populares article')
@@ -143,8 +145,8 @@ export class Parser {
             const $obj = $(obj)
             const img = $obj.find('.container_imagem').css('background-image').slice(4, -1).replace(/"/g, '')
             const titleLink = $('a', $(obj)).attr('href')
-            const id = titleLink.replace('https://mundomangakun.com.br/projeto/', '').replace('/', '')
-            const title = id.replaceAll('-', ' ').toLowerCase().replace(/\b[a-z]/g, (letter: string) => {
+            const id = titleLink?.replace('https://mundomangakun.com.br/projeto/', '').replace('/', '')
+            const title = id?.replaceAll('-', ' ').toLowerCase().replace(/\b[a-z]/g, (letter: string) => {
                 return letter.toUpperCase()
             })
 

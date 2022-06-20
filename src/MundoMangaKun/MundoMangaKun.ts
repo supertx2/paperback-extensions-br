@@ -143,7 +143,7 @@ export class MundoMangaKun extends Source {
         })
     }
 
-    constructHeaders(url: string, headers?: any): any {
+    constructHeaders(url: string, headers?: { [key: string]: string }): { [key: string]: string } {
         headers = headers ?? {}
         headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.60 Safari/537.36'
 
