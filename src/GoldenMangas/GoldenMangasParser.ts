@@ -10,6 +10,7 @@ import {
     PagedResults,
     Tag,
 } from 'paperback-extensions-common'
+import entities = require('entities')
 
 const GOLDENMANGAS_DOMAIN = 'https://goldenmanga.top'
 
@@ -20,11 +21,11 @@ export class Parser {
         const firstColumn = $('div.col-sm-4.text-right > img').first()
         const secondColumn = $('div.col-sm-8').first()
 
-        const titles = [secondColumn.find('h2').eq(0).text().trim()]
+        const title = secondColumn.find('h2').eq(0).text().trim()
         const image = firstColumn.attr('src')
         const status = secondColumn.find('h5:contains(Status) a').text() == 'Completo' ? MangaStatus.COMPLETED : MangaStatus.ONGOING
-        const author = secondColumn.find('h5:contains(Autor)').text()
-        const artist = secondColumn.find('h5:contains(Artista)').text()
+        const author = secondColumn.find('h5:contains(Autor)').text().trim()
+        const artist = secondColumn.find('h5:contains(Artista)').text().trim()
         const rating = Number(secondColumn.find('h2').eq(1).text().replace('#', '').split(' ')[0])
 
         const genres: Tag[] = []
@@ -32,12 +33,13 @@ export class Parser {
             const genre = $(genreTag).text().trim()
             const idString = /genero=(.*)/gi.exec($(genreTag).attr('href'))?.[1]
 
-            if (!idString || !genre)
+            if (!idString || !genre) {
                 continue
+            }
 
             genres.push({
                 id: idString
-                , label: genre,
+                , label: this.decodeHTMLEntity(genre),
             })
         }
 
@@ -48,13 +50,13 @@ export class Parser {
         return createManga({
             id: mangaId,
             rating: rating,
-            titles: titles,
+            titles: [this.decodeHTMLEntity(title)],
             image: image ? `${GOLDENMANGAS_DOMAIN}${image}` : 'https://i.imgur.com/GYUxEX8.png',
-            author: author,
-            artist: artist,
-            status: Number(status),
+            author: this.decodeHTMLEntity(author),
+            artist: this.decodeHTMLEntity(artist),
+            status: status,
             tags: tags,
-            desc: summary,
+            desc: this.decodeHTMLEntity(summary),
         })
     }
 
@@ -84,7 +86,7 @@ export class Parser {
                 mangaId: mangaId,
                 chapNum: chapNum,
                 langCode: LanguageCode.BRAZILIAN,
-                name: name,
+                name: this.decodeHTMLEntity(name),
                 time: time,
             }))
         }
@@ -120,19 +122,19 @@ export class Parser {
         for (const manga of $('div.mangas.col-lg-2 a').toArray()) {
             const $manga = $(manga)
 
-            const title = $manga.find('h3').text()
+            const title = $manga.find('h3').text().trim()
             const id = $manga.attr('href')?.replace('/mangabr/', '')
             const image = $manga.find('img').attr('src')
 
-            if(!title || !id)
+            if(!title || !id) {
                 continue
+            }
 
             mangaTiles.push(createMangaTile({
-                id: id!,
-                title: createIconText({text: title}),
+                id: id,
+                title: createIconText({text: this.decodeHTMLEntity(title)}),
                 image: image ? `${GOLDENMANGAS_DOMAIN}${image}` : 'https://i.imgur.com/GYUxEX8.png'
             }))
-
         }
 
         const pages = $('.pagination li')
@@ -148,7 +150,7 @@ export class Parser {
 
     }
 
-    parseUpdatedMangaGetIds($: any, time: Date, ids: string[]) {
+    parseUpdatedMangaGetIds($: any, time: Date, ids: string[]): {foundIds:string[], loadNextPage: boolean} {
 
         const foundIds: string[] = []
         let loadNextPage = true
@@ -156,19 +158,20 @@ export class Parser {
         for (const obj of context.toArray()) {
             const $obj = $(obj)
             const id = $obj.find('a').first().attr('href')?.replace('/mangabr/', '')
-            if(!id)
+            if(!id) {
                 continue
+            }
 
             const updateTimeSplied = $obj.find('.dataAtualizacao').text()?.trim()?.split('/').map((i: string) => Number(i))
 
-            if (!updateTimeSplied || updateTimeSplied.length !== 3)
+            if (!updateTimeSplied || updateTimeSplied.length !== 3) {
                 continue
+            }
 
             const updateTime = new Date(updateTimeSplied[2], updateTimeSplied[1] - 1, updateTimeSplied[0])
 
-            if (updateTime >= time) {
-                if (ids.includes(id))
-                    foundIds.push(id)
+            if (updateTime >= time && ids.includes(id)) {
+                foundIds.push(id)
             } else {
                 loadNextPage = false
                 break
@@ -187,14 +190,15 @@ export class Parser {
             const img = $('img', $(obj)).attr('src')
             const id = $obj.attr('href')?.replace('/mangabr/', '')
             const title = $obj.find('h3').text().trim()
-
+            const chapters =  $obj.find('.maisLidosCapitulos').text().trim().replaceAll('\n',', ')
             if (!id || !title) {
                 continue
             }
 
             popularMangas.push(createMangaTile({
                 id: id,
-                title: createIconText({text: title}),
+                title: createIconText({text: this.decodeHTMLEntity(title)}),
+                subtitleText: createIconText({ text: this.decodeHTMLEntity(chapters) }),
                 image: img ? `${GOLDENMANGAS_DOMAIN}${img}` : 'https://i.imgur.com/GYUxEX8.png'
             }))
         }
@@ -216,9 +220,17 @@ export class Parser {
                 continue
             }
 
+            let chapters =  $obj.find('.label-success').toArray().map((l: Element ) => $(l).text()) || []
+
+            if(chapters.length > 5) {
+                chapters = chapters.slice(0, 5)
+                chapters.push('...')
+            }
+
             popularMangas.push(createMangaTile({
                 id: id,
-                title: createIconText({text: title}),
+                title: createIconText({text: this.decodeHTMLEntity(title)}),
+                subtitleText: createIconText({text: this.decodeHTMLEntity(chapters.join(', '))}),
                 image: img ? `${GOLDENMANGAS_DOMAIN}${img}` : 'https://i.imgur.com/GYUxEX8.png',
             }))
         }
@@ -241,10 +253,18 @@ export class Parser {
                 continue
             }
 
+            let tags =  $obj.parent()?.find('.label-warning').toArray().map((l: Element ) => $(l).text()) || []
+
+            if(tags.length > 5) {
+                tags = tags.slice(0, 5)
+                tags.push('...')
+            }
+
             popularMangas.push(createMangaTile({
                 id: id,
-                primaryText: createIconText({text: synopsis}),
-                title: createIconText({text: title}),
+                primaryText: createIconText({text: this.decodeHTMLEntity(synopsis)}),
+                title: createIconText({text: this.decodeHTMLEntity(title)}),
+                subtitleText: createIconText({text: this.decodeHTMLEntity(tags.join(', '))}),
                 image: img ? `${GOLDENMANGAS_DOMAIN}${img}` : 'https://i.imgur.com/GYUxEX8.png',
             }))
         }
@@ -260,12 +280,13 @@ export class Parser {
 
             const id = $obj.attr('href').replace('/mangabr?genero=,', '')
             const tagName = $obj.text().trim()
-            if(!id || !tagName)
+            if(!id || !tagName) {
                 continue
+            }
 
             genres.push(createTag({
                 id: id,
-                label: tagName,
+                label: this.decodeHTMLEntity(tagName),
             }))
         }
 
@@ -278,11 +299,16 @@ export class Parser {
 
     parseIsLastPage($: any, curPage: number): boolean {
         const pages = $('.pagination li')
-        if(!pages.length)
+        if(!pages.length) {
             return false
+        }
 
         const maxPages = Number(pages.eq(pages.length - 2).text().trim()) || 0
         return !maxPages || curPage >= maxPages
+    }
+
+    protected decodeHTMLEntity(str: string): string {
+        return entities.decodeHTML(str)
     }
 
 }

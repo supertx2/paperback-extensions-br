@@ -121,13 +121,15 @@ export class GoldenMangas extends Source {
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
 
         const page = metadata?.page ?? 1
-        if (page == -1) return createPagedResults({results: [], metadata: {page: -1}})
+        if (page == -1) {
+            return createPagedResults({results: [], metadata: {page: -1}}) 
+        }
 
         let search = query.title ? `busca=${encodeURI(query.title.replace(' ', '+'))}` : ''
 
         //We can only search by title or by tags
         if (!search) {
-            search = ((query.includedTags?.length ?? 0) > 0) ? `genero=${encodeURI(query.includedTags?.map(t => t.id)!.join(',') || '')}` : ''
+            search = ((query.includedTags?.length ?? 0) > 0) ? `genero=${encodeURI(query.includedTags?.map(t => t.id).join(',') || '')}` : ''
         }
 
         const request = createRequestObject({
@@ -151,8 +153,10 @@ export class GoldenMangas extends Source {
             const response = await this.filterUpdatedMangaGetIds(page, dateToSearch, ids)
             loadNextPage = response.loadNextPage
 
-            if (response.foundIds && response.foundIds.length > 0)
+            if (response.foundIds && response.foundIds.length > 0) {
                 foundIds = foundIds.concat(response.foundIds)
+            }
+
             page = page + 1
         }
 
@@ -207,8 +211,9 @@ export class GoldenMangas extends Source {
         const page: number = metadata?.page ?? 1
         let lastPage = metadata?.lastPage ?? false
 
-        if(lastPage || page == -1 || homepageSectionId !== 'latestUpdates')
+        if(lastPage || page == -1 || homepageSectionId !== 'latestUpdates') {
             return createPagedResults({results: [], metadata: {page: -1}})
+        }
 
         const request = createRequestObject({
             url: `${GOLDENMANGAS_DOMAIN}/index.php?pagina=${page}`,

@@ -1,18 +1,20 @@
 import {
-    Source,
-    Manga,
     Chapter,
     ChapterDetails,
-    HomeSection,
-    SearchRequest,
-    LanguageCode,
-    PagedResults,
-    SourceInfo,
     ContentRating,
+    HomeSection,
+    HomeSectionType,
+    LanguageCode,
+    Manga,
+    PagedResults,
+    SearchRequest,
+    Source,
+    SourceInfo,
+    TagSection,
     TagType,
 } from 'paperback-extensions-common'
 
-import { Parser } from './MundoMangaKunParser'
+import {Parser} from './MundoMangaKunParser'
 
 const BASE_DOMAIN = 'https://mundomangakun.com.br'
 
@@ -117,7 +119,7 @@ export class MundoMangaKun extends Source {
 
     override async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         // Let the app know what the homsections are without filling in the data
-        const mostReadMangas = createHomeSection({ id: 'destaques', title: 'Destaques' })
+        const mostReadMangas = createHomeSection({ id: 'destaques', title: 'Destaques', type: HomeSectionType.singleRowLarge })
         sectionCallback(mostReadMangas)
 
         const request = createRequestObject({
