@@ -6,7 +6,6 @@ import {
     MangaTile,
     LanguageCode,
     PagedResults,
-    Tag,
 } from 'paperback-extensions-common'
 import entities = require('entities')
 

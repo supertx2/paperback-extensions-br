@@ -10,7 +10,6 @@ import {
     SearchRequest,
     Source,
     SourceInfo,
-    TagSection,
     TagType,
 } from 'paperback-extensions-common'
 
