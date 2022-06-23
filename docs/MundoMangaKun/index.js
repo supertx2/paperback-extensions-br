@@ -3694,7 +3694,7 @@ class Parser {
         const author = $infoElement.find('.tabela_info_projeto tr').eq(1).find('td').eq(1).text();
         const artist = $infoElement.find('.tabela_info_projeto tr').eq(0).find('td').eq(1).text();
         // const genres: Tag[] = []
-        // $infoElement.find('.generos a').filter((_: number, e: Element) => !!$(e).text()).toArray().map((e: Element) => { 
+        // $infoElement.find('.generos a').filter((_: number, e: Element) => !!$(e).text()).toArray().map((e: Element) => {
         //     const id = $(e).attr('href')?.replace(`${mangaId}/generos/`, '').replace('/', '/')
         //         , details = $(e).text().trim()
         //     if(!id || !details) {
@@ -3721,13 +3721,14 @@ class Parser {
         });
     }
     parseChapters($, mangaId) {
+        var _a;
         const chapters = [];
         for (const obj of $('.capitulos_leitor_online a').toArray()) {
             const $obj = $(obj);
             const name = $obj.text();
             const clickEvent = $obj.attr('onclick');
             const id = clickEvent === null || clickEvent === void 0 ? void 0 : clickEvent.substring(clickEvent.indexOf(mangaId), clickEvent.indexOf('\',\'tipo\'')).replaceAll('\\', '').replace(`${mangaId}/`, '').split('/')[0];
-            const chapNum = Number(name.replace(/\D/g, ''));
+            const chapNum = (_a = Number(name.replace('Capítulo ', ''))) !== null && _a !== void 0 ? _a : 0;
             // If we parsed a bad ID out, don't include this in our list
             if (!id) {
                 continue;
@@ -3735,7 +3736,7 @@ class Parser {
             chapters.push(createChapter({
                 id: id,
                 mangaId: mangaId,
-                chapNum: isNaN(chapNum) ? chapNum : 0,
+                chapNum: chapNum,
                 langCode: paperback_extensions_common_1.LanguageCode.BRAZILIAN,
                 name: this.decodeHTMLEntity(name),
             }));
@@ -3790,8 +3791,8 @@ class Parser {
             const $obj = $(obj);
             const img = $obj.find('.container_imagem').css('background-image').slice(4, -1).replace(/"/g, '');
             const titleLink = $('a', $(obj)).attr('href');
-            const id = titleLink.replace('https://mundomangakun.com.br/projeto/', '').replace('/', '');
-            const title = id.replaceAll('-', ' ').toLowerCase().replace(/\b[a-z]/g, (letter) => {
+            const id = titleLink === null || titleLink === void 0 ? void 0 : titleLink.replace('https://mundomangakun.com.br/projeto/', '').replace('/', '');
+            const title = id === null || id === void 0 ? void 0 : id.replaceAll('-', ' ').toLowerCase().replace(/\b[a-z]/g, (letter) => {
                 return letter.toUpperCase();
             });
             if (!id || !title) {
