@@ -203,15 +203,20 @@ export class Parser {
             const img = $('img', $(obj)).attr('src')
             const id = $obj.attr('href')?.replace('/mangabr/', '')
             const title = $obj.find('h3').text().trim()
-            const chapters =  $obj.find('.maisLidosCapitulos').text().trim().replaceAll('\n',', ')
+            let chapter =  $obj.find('.maisLidosCapitulos a').first().text().trim()
+
             if (!id || !title) {
                 continue
             }
 
+			if(chapter) {
+				chapter = `Cap. ${chapter}`
+			}
+
             popularMangas.push(createMangaTile({
                 id: id,
                 title: createIconText({text: this.decodeHTMLEntity(title)}),
-                subtitleText: createIconText({ text: this.decodeHTMLEntity(chapters) }),
+                subtitleText: createIconText({ text: this.decodeHTMLEntity(chapter) }),
                 image: img ? `${GOLDENMANGAS_DOMAIN}${img}` : 'https://i.imgur.com/GYUxEX8.png'
             }))
         }
@@ -233,17 +238,16 @@ export class Parser {
                 continue
             }
 
-            let chapters =  $obj.find('.label-success').toArray().map((l) => $(l).text()) || []
+            let latestChapter =  $obj.find('.label-success').first().text().trim()
 
-            if(chapters.length > 5) {
-                chapters = chapters.slice(0, 5)
-                chapters.push('...')
+            if(latestChapter) {
+                latestChapter = `Cap. ${latestChapter}`
             }
 
             popularMangas.push(createMangaTile({
                 id: id,
                 title: createIconText({text: this.decodeHTMLEntity(title)}),
-                subtitleText: createIconText({text: this.decodeHTMLEntity(chapters.join(', '))}),
+                subtitleText: createIconText({text: this.decodeHTMLEntity(latestChapter)}),
                 image: img ? `${GOLDENMANGAS_DOMAIN}${img}` : 'https://i.imgur.com/GYUxEX8.png',
             }))
         }
