@@ -94,7 +94,7 @@ export class Parser {
             chapters.push(createChapter({
                 id: id,
                 mangaId: mangaId,
-                chapNum: isNaN(chapNum) ? chapNum : 0,
+                chapNum: chapNum ?? 0,
                 langCode: LanguageCode.BRAZILIAN,
                 name: this.decodeHTMLEntity(name),
                 time: time,

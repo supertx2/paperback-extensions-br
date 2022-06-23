@@ -3288,7 +3288,11 @@ class Parser {
         const genres = [];
         for (const genreTag of secondColumn.find('h5').first().find('a').toArray()) {
             const genre = $(genreTag).text().trim();
-            const idString = (_a = /genero=(.*)/gi.exec($(genreTag).attr('href'))) === null || _a === void 0 ? void 0 : _a[1];
+            const genreRef = $(genreTag).attr('href');
+            if (!genreRef) {
+                continue;
+            }
+            const idString = (_a = /genero=(.*)/gi.exec(genreRef)) === null || _a === void 0 ? void 0 : _a[1];
             if (!idString || !genre) {
                 continue;
             }
@@ -3320,7 +3324,13 @@ class Parser {
             const rawName = firstColumn.text();
             const name = rawName.substring(0, rawName.indexOf('(')).trim();
             const splitedDate = firstColumn.find('span[style]').text().replace('(', '').replace(')', '').trim().split('/').map((i) => Number(i));
-            const time = new Date(splitedDate[2], splitedDate[1] - 1, splitedDate[0]);
+            let time;
+            if (splitedDate[2] && splitedDate[1] && splitedDate[0]) {
+                time = new Date(splitedDate[2], splitedDate[1] - 1, splitedDate[0]);
+            }
+            else {
+                time = new Date();
+            }
             const id = (_a = $('a', $(obj)).attr('href')) === null || _a === void 0 ? void 0 : _a.replace(`/mangabr/${mangaId}/`, '');
             const chapNum = Number(id);
             // If we parsed a bad ID out, don't include this in our list
@@ -3330,7 +3340,7 @@ class Parser {
             chapters.push(createChapter({
                 id: id,
                 mangaId: mangaId,
-                chapNum: isNaN(chapNum) ? chapNum : 0,
+                chapNum: chapNum !== null && chapNum !== void 0 ? chapNum : 0,
                 langCode: paperback_extensions_common_1.LanguageCode.BRAZILIAN,
                 name: this.decodeHTMLEntity(name),
                 time: time,
@@ -3397,6 +3407,9 @@ class Parser {
             if (!updateTimeSplied || updateTimeSplied.length !== 3) {
                 continue;
             }
+            if (!updateTimeSplied[2] || !updateTimeSplied[1] || !updateTimeSplied[0]) {
+                continue;
+            }
             const updateTime = new Date(updateTimeSplied[2], updateTimeSplied[1] - 1, updateTimeSplied[0]);
             if (updateTime >= time && ids.includes(id)) {
                 foundIds.push(id);
@@ -3409,10 +3422,11 @@ class Parser {
         return { foundIds: foundIds, loadNextPage: loadNextPage };
     }
     parseTags($) {
+        var _a;
         const genres = [];
         for (const obj of $('.container').eq(4).find('a.btn-warning').toArray()) {
             const $obj = $(obj);
-            const id = $obj.attr('href').replace('/mangabr?genero=,', '');
+            const id = (_a = $obj.attr('href')) === null || _a === void 0 ? void 0 : _a.replace('/mangabr?genero=,', '');
             const tagName = $obj.text().trim();
             if (!id || !tagName) {
                 continue;
