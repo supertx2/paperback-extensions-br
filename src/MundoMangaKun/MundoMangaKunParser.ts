@@ -6,16 +6,17 @@ import {
     MangaTile,
     LanguageCode,
     PagedResults,
-    Response
+    Response,
+    Tag,
+    TagSection
 } from 'paperback-extensions-common'
 import entities = require('entities')
-import CheerioAPI = cheerio.CheerioAPI;
 
 const BASE_DOMAIN = 'https://mundomangakun.com.br'
 
 export class Parser {
 
-    parseMangaDetails($: CheerioAPI, mangaId: string): Manga {
+    parseMangaDetails($: CheerioStatic, mangaId: string): Manga {
 
         const $infoElement = $('.main_container_projeto .container-fluid')
         const $infoText = $infoElement.find('.tabela_info_projeto tr')
@@ -25,39 +26,37 @@ export class Parser {
         const author = $infoElement.find('.tabela_info_projeto tr').eq(1).find('td').eq(1).text()
         const artist = $infoElement.find('.tabela_info_projeto tr').eq(0).find('td').eq(1).text()
 
-        // const genres: Tag[] = []
-        // $infoElement.find('.generos a').filter((_: number, e: Element) => !!$(e).text()).toArray().map((e: Element) => {
-        //     const id = $(e).attr('href')?.replace(`${mangaId}/generos/`, '').replace('/', '/')
-        //         , details = $(e).text().trim()
+        const genres: Tag[] = []
+        $infoElement.find('.generos a').filter((_: number, e: CheerioElement) => !!$(e).text()).toArray().map((e: CheerioElement) => {
+            const id = $(e).attr('href')?.replace(`${mangaId}/generos/`, '').replace('/', '/')
+                , details = $(e).text().trim()
 
-        //     if(!id || !details) {
-        //         return
-        //     }
+            if(!id || !details) {
+                return
+            }
 
-        //     genres.push({
-        //         id: id
-        //         , label: this.decodeHTMLEntity(details)
-        //     })
-        // })
-        //let tags: TagSection[] = [createTagSection({id: 'genres', label: 'genres', tags: genres})];
+            genres.push({
+                id: id
+                , label: this.decodeHTMLEntity(details)
+            })
+        })
+        const tags: TagSection[] = [createTagSection({id: 'genres', label: 'genres', tags: genres.map(g => createTag(g))})]
 
         const summary = $infoElement.find('.conteudo_projeto').text().trim()
 
         return createManga({
             id: mangaId,
-            rating: 1,//unknown
-            views: 1,
             titles: [this.decodeHTMLEntity(title)],
             image: image ? image : 'https://i.imgur.com/GYUxEX8.png',
             author: this.decodeHTMLEntity(author),
             artist: this.decodeHTMLEntity(artist),
             status: status,
-            // tags: tags,
+            tags: tags,
             desc: this.decodeHTMLEntity(summary),
         })
     }
 
-    parseChapters($: CheerioAPI, mangaId: string): Chapter[] {
+    parseChapters($: CheerioStatic, mangaId: string): Chapter[] {
 
         const chapters: Chapter[] = []
 
@@ -109,7 +108,7 @@ export class Parser {
         })
     }
 
-    parseSearchResults($: CheerioAPI): PagedResults {
+    parseSearchResults($: CheerioStatic): PagedResults {
         const mangaTiles: MangaTile[] = []
 
         for (const manga of $('.leitor_online_container article').toArray()) {
@@ -119,13 +118,13 @@ export class Parser {
             const id = $titleA.attr('href')?.replace(`${BASE_DOMAIN}/projeto/`, '').replace('/', '')
             const image = $manga.find('.container_imagem').css('background-image').slice(4, -1).replace(/"/g, '')
 
-            if(!id || !title) {
+            if (!id || !title) {
                 continue
             }
 
             mangaTiles.push(createMangaTile({
                 id: id,
-                title: createIconText({text: this.decodeHTMLEntity(title)}),
+                title: createIconText({ text: this.decodeHTMLEntity(title) }),
                 image: image ? image : 'https://i.imgur.com/GYUxEX8.png',
             }))
 
@@ -137,7 +136,7 @@ export class Parser {
 
     }
 
-    parseHomePageSections($: CheerioAPI): MangaTile[] {
+    parseHomePageSections($: CheerioStatic): MangaTile[] {
         const popularMangas: MangaTile[] = []
 
         const context = $('.lancamentos_main_container .container-obras-populares article')
@@ -167,14 +166,14 @@ export class Parser {
             }
             let chapter = this.decodeHTMLEntity($obj.find('.post-projeto-cap').text().trim())
 
-            if(chapter){
+            if (chapter) {
                 chapter = `Cap. ${chapter}`
             }
 
             popularMangas.push(createMangaTile({
                 id: id,
-                title: createIconText({text: this.decodeHTMLEntity(title)}),
-                subtitleText: createIconText({text: chapter}),
+                title: createIconText({ text: this.decodeHTMLEntity(title) }),
+                subtitleText: createIconText({ text: chapter }),
                 image: img ? img : 'https://i.imgur.com/GYUxEX8.png',
             }))
         }

@@ -15,9 +15,11 @@ import {
     TagType,
 } from 'paperback-extensions-common'
 
-import {Parser} from './GoldenMangasParser'
-import {GMRequestManager,
-    GMResponse} from './GoldenMangasHelper'
+import { Parser } from './GoldenMangasParser'
+import {
+    GMRequestManager,
+    GMResponse
+} from './GoldenMangasHelper'
 
 const GOLDENMANGAS_DOMAIN = 'https://goldenmanga.top'
 
@@ -118,11 +120,11 @@ export class GoldenMangas extends Source {
         return this.parser.parseChapterDetails($, mangaId, chapterId)
     }
 
-    async getSearchResults(query: SearchRequest, metadata: {page: number, totalPages: number}): Promise<PagedResults> {
+    async getSearchResults(query: SearchRequest, metadata: { page: number, totalPages: number }): Promise<PagedResults> {
 
         const page = metadata?.page ?? 1
         if (page == -1) {
-            return createPagedResults({results: [], metadata: {page: -1}}) 
+            return createPagedResults({ results: [], metadata: { page: -1 } })
         }
 
         let search = query.title ? `busca=${encodeURI(query.title.replace(' ', '+'))}` : ''
@@ -182,17 +184,18 @@ export class GoldenMangas extends Source {
 
     override async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         // Let the app know what the homsections are without filling in the data
-        const mostReadMangas = createHomeSection({id: 'mostReadMangas', title: 'Mangás mais lidos', type: HomeSectionType.featured})
+        const mostReadMangas = createHomeSection({ id: 'mostReadMangas', title: 'Mangás mais lidos', type: HomeSectionType.featured })
         sectionCallback(mostReadMangas)
-        const latestUpdates = createHomeSection({id: 'latestUpdates', title: 'Últimas Atualizações', view_more: true})
+        const latestUpdates = createHomeSection({ id: 'latestUpdates', title: 'Últimas Atualizações', view_more: true })
         sectionCallback(latestUpdates)
-        const newReleases = createHomeSection({id: 'newReleases', title: 'Novos mangás', type: HomeSectionType.singleRowLarge})
+        const newReleases = createHomeSection({ id: 'newReleases', title: 'Novos mangás', type: HomeSectionType.singleRowLarge })
         sectionCallback(newReleases)
 
         const request = createRequestObject({
             url: GOLDENMANGAS_DOMAIN,
             method: 'GET',
         })
+
         const response = await this.requestManager.schedule(request, 1)
 
         const $ = this.cheerio.load(response.data || response['fixedData'])
@@ -207,18 +210,19 @@ export class GoldenMangas extends Source {
         sectionCallback(newReleases)
     }
 
-    override async getViewMoreItems(homepageSectionId: string, metadata: {page: number, lastPage: boolean}): Promise<PagedResults>{
+    override async getViewMoreItems(homepageSectionId: string, metadata: { page: number, lastPage: boolean }): Promise<PagedResults> {
         const page: number = metadata?.page ?? 1
         let lastPage = metadata?.lastPage ?? false
 
-        if(lastPage || page == -1 || homepageSectionId !== 'latestUpdates') {
-            return createPagedResults({results: [], metadata: {page: -1}})
+        if (lastPage || page == -1 || homepageSectionId !== 'latestUpdates') {
+            return createPagedResults({ results: [], metadata: { page: -1 } })
         }
 
         const request = createRequestObject({
             url: `${GOLDENMANGAS_DOMAIN}/index.php?pagina=${page}`,
             method: 'GET',
         })
+
         const response = await this.requestManager.schedule(request, 1)
         const $ = this.cheerio.load(response.data || response['fixedData'])
 
@@ -228,7 +232,7 @@ export class GoldenMangas extends Source {
         return createPagedResults({
             results: mangas,
             metadata: {
-                page: page +1,
+                page: page + 1,
                 lastPage: lastPage
             }
         })
@@ -239,6 +243,7 @@ export class GoldenMangas extends Source {
             url: `${GOLDENMANGAS_DOMAIN}/mangabr?genero`,
             method: 'GET',
         })
+
         const response = await this.requestManager.schedule(options, 1)
         const $ = this.cheerio.load(response.data || response['fixedData'])
 

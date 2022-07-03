@@ -13,7 +13,7 @@ import {
     TagType,
 } from 'paperback-extensions-common'
 
-import {Parser} from './MundoMangaKunParser'
+import { Parser } from './MundoMangaKunParser'
 
 const BASE_DOMAIN = 'https://mundomangakun.com.br'
 
@@ -102,7 +102,7 @@ export class MundoMangaKun extends Source {
         return this.parser.parseChapterDetails(data, mangaId, chapterId)
     }
 
-    async getSearchResults(query: SearchRequest, _metadata: any): Promise<PagedResults> {
+    async getSearchResults(query: SearchRequest): Promise<PagedResults> {
 
         const request = createRequestObject({
             url: `${BASE_DOMAIN}/leitor-online/?leitor_titulo_projeto=${query.title}&leitor_autor_projeto=&leitor_genero_projeto=&leitor_status_projeto=&leitor_ordem_projeto=ASC`,

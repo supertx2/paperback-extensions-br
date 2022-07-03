@@ -1,6 +1,6 @@
 import { Response } from 'paperback-extensions-common'
-import {Request} from 'paperback-extensions-common/dist/models/RequestObject'
-import {RequestManagerInfo} from 'paperback-extensions-common/dist/models/RequestManager'
+import { Request } from 'paperback-extensions-common/dist/models/RequestObject'
+import { RequestManagerInfo } from 'paperback-extensions-common/dist/models/RequestManager'
 
 export interface GMResponse extends Response {
     fixedData: string;
