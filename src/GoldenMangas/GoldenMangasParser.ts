@@ -225,7 +225,7 @@ export class Parser {
         }
 
         return popularMangas
-    };
+    }
 
     parseHomePageLatestUpdates = ($: CheerioStatic): MangaTile[] => {
         const popularMangas: MangaTile[] = []
@@ -256,7 +256,7 @@ export class Parser {
         }
 
         return popularMangas
-    };
+    }
 
     parseHomePageNewReleases = ($: CheerioStatic): MangaTile[] => {
         const popularMangas: MangaTile[] = []
@@ -290,7 +290,7 @@ export class Parser {
         }
 
         return popularMangas
-    };
+    }
 
     parseTags($: CheerioStatic): TagSection[] {
 

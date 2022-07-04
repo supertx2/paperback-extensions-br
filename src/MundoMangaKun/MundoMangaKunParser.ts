@@ -28,8 +28,8 @@ export class Parser {
 
         const genres: Tag[] = []
         $infoElement.find('.generos a').filter((_: number, e: CheerioElement) => !!$(e).text()).toArray().map((e: CheerioElement) => {
-            const id = $(e).attr('href')?.replace(`${mangaId}/generos/`, '').replace('/', '/')
-                , details = $(e).text().trim()
+            const id = $(e).text().trim()
+                , details = id
 
             if(!id || !details) {
                 return
@@ -130,8 +130,16 @@ export class Parser {
 
         }
 
+        const paging = $('.paginacao')
+        const page = Number(paging.find('.current').text()) ?? 1
+        const totalPages = Number(paging.find('.page-numbers:not(.next)').last().text()) ?? 1
+
         return createPagedResults({
             results: mangaTiles,
+            metadata: {
+                page: page + 1 > totalPages ? -1 : page + 1,
+                totalPages: totalPages,
+            },
         })
 
     }
@@ -179,6 +187,95 @@ export class Parser {
         }
 
         return popularMangas
+    }
+
+    parseHomePageNewReleases = ($: CheerioStatic): MangaTile[] => {
+        const popularMangas: MangaTile[] = []
+
+        const context = $('.post-projeto')
+        for (const obj of context.toArray()) {
+            const $obj = $(obj)
+            const img = $obj.find('.post-projeto-background').css('background-image').slice(4, -1).replace(/"/g, '')
+            const titleLink = $('a', $(obj)).attr('href')
+            //url example: https://mundomangakun.com.br/leitor-online/projeto/building-owner/cap-tulo-51/#todas-as-paginas
+            let id = titleLink?.replace('https://mundomangakun.com.br/leitor-online/projeto/', '')
+            const title = $obj.find('.titulo-cap').contents().eq(0).text().trim()
+            const chapter = $obj.find('.titulo-cap small').text().trim()
+
+            if (!id || !title) {
+                continue
+            }
+
+            //We only need the project name, we remove the rest
+            id = id.substring(0, id.indexOf('/')).trim()
+
+            popularMangas.push(createMangaTile({
+                id: id,
+                title: createIconText({ text: this.decodeHTMLEntity(title) }),
+                subtitleText: createIconText({ text: this.decodeHTMLEntity(chapter) }),
+                image: img ? img : 'https://i.imgur.com/GYUxEX8.png',
+            }))
+        }
+
+        return popularMangas
+    }
+
+    getTags(): TagSection[] {
+        const genres: Tag[] = []
+
+        for(const genre of Object.keys(this.getGenres())) {
+            genres.push(createTag({
+                id: genre,
+                label: this.decodeHTMLEntity(genre),
+            }))
+        }
+
+        return [createTagSection({
+            id: 'Genero',
+            label: 'Genero',
+            tags: genres,
+        })]
+    }
+
+    getGenres(): { [key: string]: number } {
+        return {
+            'Ação': 59,
+            'Adulto': 63,
+            'Artes Marciais': 77,
+            'Aventura': 65,
+            'Comédia': 30,
+            'Drama': 17,
+            'Ecchi': 74,
+            'Escolar': 64,
+            'Esportes': 87,
+            'Fantasia': 31,
+            'Gyaru': 681,
+            'Harem': 82,
+            'hentai': 525,
+            'Histórico': 95,
+            'Josei': 553,
+            'Mistério': 19,
+            'Oneshot': 527,
+            'Peitões': 680,
+            'Psicológico': 20,
+            'Romance': 75,
+            'Sci-fi': 66,
+            'Seinen': 61,
+            'Serial Killer': 93,
+            'Shoujo': 568,
+            'Shoujo Ai': 92,
+            'Shounen': 67,
+            'Slice Of Life': 94,
+            'Sobrenatural': 76,
+            'Sobrevivência': 90,
+            'Super Poderes': 425,
+            'Supernatual': 60,
+            'Suspense': 520,
+            'Terror': 18,
+            'Tragédia': 21,
+            'Virgem': 682,
+            'yuri': 526,
+        }
     }
 
     protected decodeHTMLEntity(str: string): string {

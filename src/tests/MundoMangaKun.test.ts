@@ -3,6 +3,7 @@
 import cheerio from 'cheerio'
 import {APIWrapper, SearchRequest, Source} from 'paperback-extensions-common';
 import { MundoMangaKun as MundoMangaKun } from '../MundoMangaKun/MundoMangaKun';
+import axios from 'axios';
 
 describe('GoldenMangas Tests', function () {
 
@@ -80,6 +81,19 @@ describe('GoldenMangas Tests', function () {
 
         // Ensure that we can resolve each of the images for the home-page, since these images are generated and not scraped
         for (let obj of homePages[0].items ?? []) {
+            let axios = require('axios')
+            let imageResult = await axios.get(obj.image)
+            expect(imageResult.status).to.equal(200)    // Good resolve!
+        }
+    })
+
+	it("Testing View More aquisition", async () => {
+        let titles = await wrapper.getViewMoreItems(source, 'newReleases', {})
+        expect(titles, "No response from server").to.exist
+        expect(titles[0].items, "No items present").to.exist
+
+        // Ensure that we can resolve each of the images for the home-page, since these images are generated and not scraped
+        for (let obj of titles[0].items ?? []) {
             let axios = require('axios')
             let imageResult = await axios.get(obj.image)
             expect(imageResult.status).to.equal(200)    // Good resolve!

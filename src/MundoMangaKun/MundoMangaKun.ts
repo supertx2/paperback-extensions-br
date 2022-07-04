@@ -10,6 +10,7 @@ import {
     SearchRequest,
     Source,
     SourceInfo,
+    TagSection,
     TagType,
 } from 'paperback-extensions-common'
 
@@ -40,19 +41,19 @@ export const MundoMangaKunInfo: SourceInfo = {
 }
 
 export class MundoMangaKun extends Source {
-    private readonly parser: Parser = new Parser();
+    private readonly parser: Parser = new Parser()
 
     requestManager = createRequestManager({
         requestsPerSecond: 3,
         requestTimeout: 15000,
         interceptor: {
             interceptRequest: async (request) => {
-                request.headers = this.constructHeaders(request.url)
+                request.headers = this.constructHeaders(request.url, request.headers)
                 return request
             },
             interceptResponse: async (response) => response,
         },
-    });
+    })
 
 
     async getMangaDetails(mangaId: string): Promise<Manga> {
@@ -102,10 +103,24 @@ export class MundoMangaKun extends Source {
         return this.parser.parseChapterDetails(data, mangaId, chapterId)
     }
 
-    async getSearchResults(query: SearchRequest): Promise<PagedResults> {
+    async getSearchResults(query: SearchRequest, metadata: { page: number, totalPages: number }): Promise<PagedResults> {
 
+        const page = metadata?.page ?? 1
+        if (page == -1) {
+            return createPagedResults({ results: [], metadata: { page: -1 } })
+        }
+
+        let search = query.title ? `leitor_titulo_projeto=${query.title}` : ''
+
+        if (!search && query.includedTags?.length && query.includedTags[0]) {
+            const genreId = this.parser.getGenres()[query.includedTags[0].id]
+            if(genreId)
+                search = `leitor_genero_projeto=${genreId}`
+        }
+
+        const pageUrl = page > 1 ? `page/${page}/` : ''
         const request = createRequestObject({
-            url: `${BASE_DOMAIN}/leitor-online/?leitor_titulo_projeto=${query.title}&leitor_autor_projeto=&leitor_genero_projeto=&leitor_status_projeto=&leitor_ordem_projeto=ASC`,
+            url: `${BASE_DOMAIN}/leitor-online/${pageUrl}?${search}&leitor_ordem_projeto=ASC`,
             method: 'GET',
         })
 
@@ -120,6 +135,8 @@ export class MundoMangaKun extends Source {
         // Let the app know what the homsections are without filling in the data
         const mostReadMangas = createHomeSection({ id: 'destaques', title: 'Destaques', type: HomeSectionType.singleRowLarge })
         sectionCallback(mostReadMangas)
+        const newReleases = createHomeSection({ id: 'newReleases', title: 'Novos Lançamentos', type: HomeSectionType.singleRowNormal, view_more: true })
+        sectionCallback(newReleases)
 
         const request = createRequestObject({
             url: BASE_DOMAIN,
@@ -133,6 +150,52 @@ export class MundoMangaKun extends Source {
 
         mostReadMangas.items = popularMangas
         sectionCallback(mostReadMangas)
+
+        newReleases.items = this.parser.parseHomePageNewReleases($)
+        sectionCallback(newReleases)
+    }
+
+    override async getViewMoreItems(homepageSectionId: string, metadata: { page: number, lastPage: boolean }): Promise<PagedResults> {
+        const page: number = metadata?.page ?? 1
+        const lastPage = metadata?.lastPage ?? false
+
+        if (lastPage || page == -1 || homepageSectionId !== 'newReleases') {
+            return createPagedResults({ results: [], metadata: { page: -1 } })
+        }
+
+        const request = createRequestObject({
+            url: `${BASE_DOMAIN}/wp-admin/admin-ajax.php`,
+            data: `action=solicita_mais_capitulos&qtd_posts=${page*40}&modo_leitura=%23todas-as-paginas`,
+            method: 'POST',
+        })
+
+        const response = await this.requestManager.schedule(request, 1)
+
+        if(!response.data) {
+            return createPagedResults({
+                results: [],
+                metadata: {
+                    page: -1,
+                    lastPage: true
+                }
+            })
+        }
+
+        const $ = this.cheerio.load(response.data)
+
+        const mangas = this.parser.parseHomePageNewReleases($)
+
+        return createPagedResults({
+            results: mangas,
+            metadata: {
+                page: page + 1,
+                lastPage: lastPage
+            }
+        })
+    }
+
+    override async getTags(): Promise<TagSection[]> {
+        return this.parser.getTags()
     }
 
     override getCloudflareBypassRequest() {
