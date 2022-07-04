@@ -19,7 +19,7 @@ import { Parser } from './MundoMangaKunParser'
 const BASE_DOMAIN = 'https://mundomangakun.com.br'
 
 export const MundoMangaKunInfo: SourceInfo = {
-    version: '0.1',
+    version: '0.4',
     name: 'Mundo Mangá-kun',
     description: 'Extension that pulls manga from mundomangakun.com.brp',
     author: 'SuperTx2',
@@ -114,8 +114,9 @@ export class MundoMangaKun extends Source {
 
         if (!search && query.includedTags?.length && query.includedTags[0]) {
             const genreId = this.parser.getGenres()[query.includedTags[0].id]
-            if(genreId)
+            if(genreId) {
                 search = `leitor_genero_projeto=${genreId}`
+            }
         }
 
         const pageUrl = page > 1 ? `page/${page}/` : ''
@@ -170,7 +171,6 @@ export class MundoMangaKun extends Source {
         })
 
         const response = await this.requestManager.schedule(request, 1)
-
         if(!response.data) {
             return createPagedResults({
                 results: [],
@@ -182,7 +182,6 @@ export class MundoMangaKun extends Source {
         }
 
         const $ = this.cheerio.load(response.data)
-
         const mangas = this.parser.parseHomePageNewReleases($)
 
         return createPagedResults({

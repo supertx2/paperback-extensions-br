@@ -3788,7 +3788,7 @@ class Parser {
                     id: id,
                     title: createIconText({ text: this.decodeHTMLEntity(title) }),
                     subtitleText: createIconText({ text: this.decodeHTMLEntity(chapter) }),
-                    image: img ? `${GOLDENMANGAS_DOMAIN}${img}` : 'https://i.imgur.com/GYUxEX8.png'
+                    image: img ? (GOLDENMANGAS_DOMAIN + img) : 'https://i.imgur.com/GYUxEX8.png'
                 }));
             }
             return popularMangas;
@@ -3813,7 +3813,7 @@ class Parser {
                     id: id,
                     title: createIconText({ text: this.decodeHTMLEntity(title) }),
                     subtitleText: createIconText({ text: this.decodeHTMLEntity(latestChapter) }),
-                    image: img ? `${GOLDENMANGAS_DOMAIN}${img}` : 'https://i.imgur.com/GYUxEX8.png',
+                    image: img ? GOLDENMANGAS_DOMAIN + img : 'https://i.imgur.com/GYUxEX8.png',
                 }));
             }
             return popularMangas;
@@ -3841,7 +3841,7 @@ class Parser {
                     primaryText: createIconText({ text: this.decodeHTMLEntity(synopsis) }),
                     title: createIconText({ text: this.decodeHTMLEntity(title) }),
                     subtitleText: createIconText({ text: this.decodeHTMLEntity(tags.join(', ')) }),
-                    image: img ? `${GOLDENMANGAS_DOMAIN}${img}` : 'https://i.imgur.com/GYUxEX8.png',
+                    image: img ? (GOLDENMANGAS_DOMAIN + img) : 'https://i.imgur.com/GYUxEX8.png',
                 }));
             }
             return popularMangas;
@@ -3879,7 +3879,7 @@ class Parser {
             id: mangaId,
             rating: rating,
             titles: [this.decodeHTMLEntity(title)],
-            image: image ? `${GOLDENMANGAS_DOMAIN}${image}` : 'https://i.imgur.com/GYUxEX8.png',
+            image: image ? (GOLDENMANGAS_DOMAIN + image) : 'https://i.imgur.com/GYUxEX8.png',
             author: this.decodeHTMLEntity(author),
             artist: this.decodeHTMLEntity(artist),
             status: status,
@@ -3951,7 +3951,7 @@ class Parser {
             mangaTiles.push(createMangaTile({
                 id: id,
                 title: createIconText({ text: this.decodeHTMLEntity(title) }),
-                image: image ? `${GOLDENMANGAS_DOMAIN}${image}` : 'https://i.imgur.com/GYUxEX8.png'
+                image: image ? (GOLDENMANGAS_DOMAIN + image) : 'https://i.imgur.com/GYUxEX8.png'
             }));
         }
         const pages = $('.pagination li');

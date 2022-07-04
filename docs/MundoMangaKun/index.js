@@ -3553,7 +3553,7 @@ const paperback_extensions_common_1 = require("paperback-extensions-common");
 const MundoMangaKunParser_1 = require("./MundoMangaKunParser");
 const BASE_DOMAIN = 'https://mundomangakun.com.br';
 exports.MundoMangaKunInfo = {
-    version: '0.1',
+    version: '0.4',
     name: 'Mundo Mangá-kun',
     description: 'Extension that pulls manga from mundomangakun.com.brp',
     author: 'SuperTx2',
@@ -3582,7 +3582,7 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
             requestTimeout: 15000,
             interceptor: {
                 interceptRequest: (request) => __awaiter(this, void 0, void 0, function* () {
-                    request.headers = this.constructHeaders(request.url);
+                    request.headers = this.constructHeaders(request.url, request.headers);
                     return request;
                 }),
                 interceptResponse: (response) => __awaiter(this, void 0, void 0, function* () { return response; }),
@@ -3630,10 +3630,23 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
             return this.parser.parseChapterDetails(data, mangaId, chapterId);
         });
     }
-    getSearchResults(query, _metadata) {
+    getSearchResults(query, metadata) {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
+            const page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
+            if (page == -1) {
+                return createPagedResults({ results: [], metadata: { page: -1 } });
+            }
+            let search = query.title ? `leitor_titulo_projeto=${query.title}` : '';
+            if (!search && ((_b = query.includedTags) === null || _b === void 0 ? void 0 : _b.length) && query.includedTags[0]) {
+                const genreId = this.parser.getGenres()[query.includedTags[0].id];
+                if (genreId) {
+                    search = `leitor_genero_projeto=${genreId}`;
+                }
+            }
+            const pageUrl = page > 1 ? `page/${page}/` : '';
             const request = createRequestObject({
-                url: `${BASE_DOMAIN}/leitor-online/?leitor_titulo_projeto=${query.title}&leitor_autor_projeto=&leitor_genero_projeto=&leitor_status_projeto=&leitor_ordem_projeto=ASC`,
+                url: `${BASE_DOMAIN}/leitor-online/${pageUrl}?${search}&leitor_ordem_projeto=ASC`,
                 method: 'GET',
             });
             const data = yield this.requestManager.schedule(request, 1);
@@ -3646,6 +3659,8 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
             // Let the app know what the homsections are without filling in the data
             const mostReadMangas = createHomeSection({ id: 'destaques', title: 'Destaques', type: paperback_extensions_common_1.HomeSectionType.singleRowLarge });
             sectionCallback(mostReadMangas);
+            const newReleases = createHomeSection({ id: 'newReleases', title: 'Novos Lançamentos', type: paperback_extensions_common_1.HomeSectionType.singleRowNormal, view_more: true });
+            sectionCallback(newReleases);
             const request = createRequestObject({
                 url: BASE_DOMAIN,
                 method: 'GET',
@@ -3655,6 +3670,47 @@ class MundoMangaKun extends paperback_extensions_common_1.Source {
             const popularMangas = this.parser.parseHomePageSections($);
             mostReadMangas.items = popularMangas;
             sectionCallback(mostReadMangas);
+            newReleases.items = this.parser.parseHomePageNewReleases($);
+            sectionCallback(newReleases);
+        });
+    }
+    getViewMoreItems(homepageSectionId, metadata) {
+        var _a, _b;
+        return __awaiter(this, void 0, void 0, function* () {
+            const page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
+            const lastPage = (_b = metadata === null || metadata === void 0 ? void 0 : metadata.lastPage) !== null && _b !== void 0 ? _b : false;
+            if (lastPage || page == -1 || homepageSectionId !== 'newReleases') {
+                return createPagedResults({ results: [], metadata: { page: -1 } });
+            }
+            const request = createRequestObject({
+                url: `${BASE_DOMAIN}/wp-admin/admin-ajax.php`,
+                data: `action=solicita_mais_capitulos&qtd_posts=${page * 40}&modo_leitura=%23todas-as-paginas`,
+                method: 'POST',
+            });
+            const response = yield this.requestManager.schedule(request, 1);
+            if (!response.data) {
+                return createPagedResults({
+                    results: [],
+                    metadata: {
+                        page: -1,
+                        lastPage: true
+                    }
+                });
+            }
+            const $ = this.cheerio.load(response.data);
+            const mangas = this.parser.parseHomePageNewReleases($);
+            return createPagedResults({
+                results: mangas,
+                metadata: {
+                    page: page + 1,
+                    lastPage: lastPage
+                }
+            });
+        });
+    }
+    getTags() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.parser.getTags();
         });
     }
     getCloudflareBypassRequest() {
@@ -3685,6 +3741,33 @@ const paperback_extensions_common_1 = require("paperback-extensions-common");
 const entities = require("entities");
 const BASE_DOMAIN = 'https://mundomangakun.com.br';
 class Parser {
+    constructor() {
+        this.parseHomePageNewReleases = ($) => {
+            const popularMangas = [];
+            const context = $('.post-projeto');
+            for (const obj of context.toArray()) {
+                const $obj = $(obj);
+                const img = $obj.find('.post-projeto-background').css('background-image').slice(4, -1).replace(/"/g, '');
+                const titleLink = $('a', $(obj)).attr('href');
+                //url example: https://mundomangakun.com.br/leitor-online/projeto/building-owner/cap-tulo-51/#todas-as-paginas
+                let id = titleLink === null || titleLink === void 0 ? void 0 : titleLink.replace('https://mundomangakun.com.br/leitor-online/projeto/', '');
+                const title = $obj.find('.titulo-cap').contents().eq(0).text().trim();
+                const chapter = $obj.find('.titulo-cap small').text().trim();
+                if (!id || !title) {
+                    continue;
+                }
+                //We only need the project name, we remove the rest
+                id = id.substring(0, id.indexOf('/')).trim();
+                popularMangas.push(createMangaTile({
+                    id: id,
+                    title: createIconText({ text: this.decodeHTMLEntity(title) }),
+                    subtitleText: createIconText({ text: this.decodeHTMLEntity(chapter) }),
+                    image: img ? img : 'https://i.imgur.com/GYUxEX8.png',
+                }));
+            }
+            return popularMangas;
+        };
+    }
     parseMangaDetails($, mangaId) {
         const $infoElement = $('.main_container_projeto .container-fluid');
         const $infoText = $infoElement.find('.tabela_info_projeto tr');
@@ -3693,30 +3776,27 @@ class Parser {
         const status = $infoText.eq(5).find('td').eq(1).text() == 'Em Andamento' ? paperback_extensions_common_1.MangaStatus.ONGOING : paperback_extensions_common_1.MangaStatus.COMPLETED;
         const author = $infoElement.find('.tabela_info_projeto tr').eq(1).find('td').eq(1).text();
         const artist = $infoElement.find('.tabela_info_projeto tr').eq(0).find('td').eq(1).text();
-        // const genres: Tag[] = []
-        // $infoElement.find('.generos a').filter((_: number, e: Element) => !!$(e).text()).toArray().map((e: Element) => {
-        //     const id = $(e).attr('href')?.replace(`${mangaId}/generos/`, '').replace('/', '/')
-        //         , details = $(e).text().trim()
-        //     if(!id || !details) {
-        //         return
-        //     }
-        //     genres.push({
-        //         id: id
-        //         , label: this.decodeHTMLEntity(details)
-        //     })
-        // })
-        //let tags: TagSection[] = [createTagSection({id: 'genres', label: 'genres', tags: genres})];
+        const genres = [];
+        $infoElement.find('.generos a').filter((_, e) => !!$(e).text()).toArray().map((e) => {
+            const id = $(e).text().trim(), details = id;
+            if (!id || !details) {
+                return;
+            }
+            genres.push({
+                id: id,
+                label: this.decodeHTMLEntity(details)
+            });
+        });
+        const tags = [createTagSection({ id: 'genres', label: 'genres', tags: genres.map(g => createTag(g)) })];
         const summary = $infoElement.find('.conteudo_projeto').text().trim();
         return createManga({
             id: mangaId,
-            rating: 1,
-            views: 1,
             titles: [this.decodeHTMLEntity(title)],
             image: image ? image : 'https://i.imgur.com/GYUxEX8.png',
             author: this.decodeHTMLEntity(author),
             artist: this.decodeHTMLEntity(artist),
             status: status,
-            // tags: tags,
+            tags: tags,
             desc: this.decodeHTMLEntity(summary),
         });
     }
@@ -3763,7 +3843,7 @@ class Parser {
         });
     }
     parseSearchResults($) {
-        var _a;
+        var _a, _b, _c;
         const mangaTiles = [];
         for (const manga of $('.leitor_online_container article').toArray()) {
             const $manga = $(manga);
@@ -3780,8 +3860,15 @@ class Parser {
                 image: image ? image : 'https://i.imgur.com/GYUxEX8.png',
             }));
         }
+        const paging = $('.paginacao');
+        const page = (_b = Number(paging.find('.current').text())) !== null && _b !== void 0 ? _b : 1;
+        const totalPages = (_c = Number(paging.find('.page-numbers:not(.next)').last().text())) !== null && _c !== void 0 ? _c : 1;
         return createPagedResults({
             results: mangaTiles,
+            metadata: {
+                page: page + 1 > totalPages ? -1 : page + 1,
+                totalPages: totalPages,
+            },
         });
     }
     parseHomePageSections($) {
@@ -3820,6 +3907,60 @@ class Parser {
             }));
         }
         return popularMangas;
+    }
+    getTags() {
+        const genres = [];
+        for (const genre of Object.keys(this.getGenres())) {
+            genres.push(createTag({
+                id: genre,
+                label: this.decodeHTMLEntity(genre),
+            }));
+        }
+        return [createTagSection({
+                id: 'Genero',
+                label: 'Genero',
+                tags: genres,
+            })];
+    }
+    getGenres() {
+        return {
+            'Ação': 59,
+            'Adulto': 63,
+            'Artes Marciais': 77,
+            'Aventura': 65,
+            'Comédia': 30,
+            'Drama': 17,
+            'Ecchi': 74,
+            'Escolar': 64,
+            'Esportes': 87,
+            'Fantasia': 31,
+            'Gyaru': 681,
+            'Harem': 82,
+            'hentai': 525,
+            'Histórico': 95,
+            'Josei': 553,
+            'Mistério': 19,
+            'Oneshot': 527,
+            'Peitões': 680,
+            'Psicológico': 20,
+            'Romance': 75,
+            'Sci-fi': 66,
+            'Seinen': 61,
+            'Serial Killer': 93,
+            'Shoujo': 568,
+            'Shoujo Ai': 92,
+            'Shounen': 67,
+            'Slice Of Life': 94,
+            'Sobrenatural': 76,
+            'Sobrevivência': 90,
+            'Super Poderes': 425,
+            'Supernatual': 60,
+            'Suspense': 520,
+            'Terror': 18,
+            'Tragédia': 21,
+            'Virgem': 682,
+            'yuri': 526,
+        };
     }
     decodeHTMLEntity(str) {
         return entities.decodeHTML(str);
