@@ -209,15 +209,20 @@ export class Parser {
             //We only need the project name, we remove the rest
             id = id.substring(0, id.indexOf('/')).trim()
 
-            popularMangas.push(createMangaTile({
+            //If the manga was already added we skip it
+            if(popularMangas.findIndex(item => item.id == id) > -1) {
+                continue
+            }
+
+            popularMangas.push({
                 id: id,
                 title: createIconText({ text: this.decodeHTMLEntity(title) }),
                 subtitleText: createIconText({ text: this.decodeHTMLEntity(chapter) }),
                 image: img ? img : 'https://i.imgur.com/GYUxEX8.png',
-            }))
+            })
         }
 
-        return popularMangas
+        return popularMangas.map(manga => createMangaTile(manga))
     }
 
     getTags(): TagSection[] {
