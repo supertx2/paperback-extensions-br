@@ -191,6 +191,7 @@ export class Parser {
 
     parseHomePageNewReleases = ($: CheerioStatic): MangaTile[] => {
         const popularMangas: MangaTile[] = []
+        const collectedIds: string[] = []
 
         const context = $('.post-projeto')
         for (const obj of context.toArray()) {
@@ -202,27 +203,23 @@ export class Parser {
             const title = $obj.find('.titulo-cap').contents().eq(0).text().trim()
             const chapter = $obj.find('.titulo-cap small').text().trim()
 
-            if (!id || !title) {
-                continue
-            }
-
             //We only need the project name, we remove the rest
-            id = id.substring(0, id.indexOf('/')).trim()
+            id = id?.substring(0, id?.indexOf('/')).trim()
 
-            //If the manga was already added we skip it
-            if(popularMangas.findIndex(item => item.id == id) > -1) {
+            if (!id || !title || collectedIds.includes(id)) {
                 continue
             }
 
-            popularMangas.push({
+            popularMangas.push(createMangaTile({
                 id: id,
                 title: createIconText({ text: this.decodeHTMLEntity(title) }),
                 subtitleText: createIconText({ text: this.decodeHTMLEntity(chapter) }),
                 image: img ? img : 'https://i.imgur.com/GYUxEX8.png',
-            })
+            }))
+            collectedIds.push(id)
         }
 
-        return popularMangas.map(manga => createMangaTile(manga))
+        return popularMangas
     }
 
     getTags(): TagSection[] {

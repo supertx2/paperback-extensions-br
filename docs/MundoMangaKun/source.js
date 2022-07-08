@@ -1154,6 +1154,7 @@ class Parser {
     constructor() {
         this.parseHomePageNewReleases = ($) => {
             const popularMangas = [];
+            const collectedIds = [];
             const context = $('.post-projeto');
             for (const obj of context.toArray()) {
                 const $obj = $(obj);
@@ -1163,23 +1164,20 @@ class Parser {
                 let id = titleLink === null || titleLink === void 0 ? void 0 : titleLink.replace('https://mundomangakun.com.br/leitor-online/projeto/', '');
                 const title = $obj.find('.titulo-cap').contents().eq(0).text().trim();
                 const chapter = $obj.find('.titulo-cap small').text().trim();
-                if (!id || !title) {
-                    continue;
-                }
                 //We only need the project name, we remove the rest
-                id = id.substring(0, id.indexOf('/')).trim();
-                //If the manga was already added we skip it
-                if (popularMangas.findIndex(item => item.id == id) > -1) {
+                id = id === null || id === void 0 ? void 0 : id.substring(0, id === null || id === void 0 ? void 0 : id.indexOf('/')).trim();
+                if (!id || !title || collectedIds.includes(id)) {
                     continue;
                 }
-                popularMangas.push({
+                popularMangas.push(createMangaTile({
                     id: id,
                     title: createIconText({ text: this.decodeHTMLEntity(title) }),
                     subtitleText: createIconText({ text: this.decodeHTMLEntity(chapter) }),
                     image: img ? img : 'https://i.imgur.com/GYUxEX8.png',
-                });
+                }));
+                collectedIds.push(id);
             }
-            return popularMangas.map(manga => createMangaTile(manga));
+            return popularMangas;
         };
     }
     parseMangaDetails($, mangaId) {
